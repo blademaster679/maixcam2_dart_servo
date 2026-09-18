@@ -1,0 +1,41 @@
+$ ps -C e907_live_probe -o pid=,args=
+$ cat /sys/kernel/debug/pwm
+platform/6062000.pwm2, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6061000.pwm1, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6060000.pwm0, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   (sysfs               ): requested enabled period: 100000 ns duty: 47500 ns polarity: normal
+$ cd /tmp/e907_bench && ./e907_live_probe --bench-servo all ./e907_servo.bin --cycles 1
+bash: line 1: cd: /tmp/e907_bench: No such file or directory
+EXIT_STATUS 1
+$ cat /sys/kernel/debug/pwm; readlink /sys/bus/platform/devices/6061000.pwm1/driver
+platform/6062000.pwm2, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6061000.pwm1, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6060000.pwm0, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   (sysfs               ): requested enabled period: 100000 ns duty: 47500 ns polarity: normal
+../../../../bus/platform/drivers/axera-pwm

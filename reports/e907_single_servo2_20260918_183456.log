@@ -1,0 +1,40 @@
+Command: cd /tmp/e907_bench && ./e907_live_probe --bench-servo 2 ./e907_servo.bin --cycles 1
+PRECHECK mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+LEASE: Linux PWM1 unbound, idle registers saved; PWM0/PWM2 untouched
+ALLOC phys=64f7b000 bytes=16384 firmware_bytes=1536
+BOOT magic=53525631 hart=00000000 misa=40909105 mhcr=00000000 cause=00000000 epc=00000000 tval=00000000
+BENCH: fixed sequence, 333 Hz, 1445..1555 us; Ctrl+C stops and restores hardware
+BENCH cycle=1/1
+BENCH servo=2 PWM=5 pulse_us=1500 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1522 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1500 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1478 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1500 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1555 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1500 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1445 (other outputs disabled)
+BENCH servo=2 PWM=5 pulse_us=1500 (other outputs disabled)
+PASS: bench commands and register readback; visually confirm actual servo motion
+RESTORE mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+RESTORE: PWM1 registers/pads restored and Linux driver rebound
+EXIT_STATUS 0
+
+POSTCHECK
+platform/6061000.pwm1, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6062000.pwm2, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6060000.pwm0, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 100000 ns duty: 47500 ns polarity: normal
+../../../../bus/platform/drivers/axera-pwm

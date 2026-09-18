@@ -26,25 +26,26 @@ struct e907_bench_io {
     void *ctx;
     uint64_t (*now_ms)(void *);
     int (*wait_ms)(void *, unsigned);
-    int (*set)(void *, unsigned channel, unsigned pulse_us);
+    int (*set)(void *, unsigned channel_mask, unsigned pulse_us);
     int (*stop)(void *);
     void (*cycle_begin)(void *, unsigned cycle, unsigned total);
 };
 
-static int e907_bench_run(const struct e907_bench_io *io, unsigned mask, unsigned cycles)
+static int e907_bench_run_mode(const struct e907_bench_io *io, unsigned mask, unsigned cycles, int together)
 {
-    static const unsigned pulses[] = {1500, 1522, 1500, 1478, 1500,
-                                      1555, 1500, 1445, 1500};
+    static const unsigned pulses[] = {1500, 1550, 1500, 1450, 1500,
+                                      1600, 1500, 1400, 1500};
     if (!mask || (mask & ~15U) || !cycles || cycles > E907_BENCH_MAX_CYCLES) return -1;
     for (unsigned cycle = 1; cycle <= cycles; ++cycle) {
         if (io->cycle_begin) io->cycle_begin(io->ctx, cycle, cycles);
-        for (unsigned ch = 0; ch < 4; ++ch) {
-            if (!(mask & (1U << ch))) continue;
+        for (unsigned ch = 0; ch < (together ? 1U : 4U); ++ch) {
+            unsigned selected = together ? mask : mask & (1U << ch);
+            if (!selected) continue;
             if (io->stop(io->ctx)) return -1;
             for (unsigned step = 0; step < sizeof(pulses)/sizeof(pulses[0]); ++step) {
                 uint64_t end = io->now_ms(io->ctx) + (step == 0 ? 3000 : 1500);
                 do {
-                    if (io->set(io->ctx, ch, pulses[step])) goto failed;
+                    if (io->set(io->ctx, selected, pulses[step])) goto failed;
                     uint64_t now = io->now_ms(io->ctx);
                     if (now >= end) break;
                     unsigned wait = end - now > 100 ? 100 : (unsigned)(end - now);
@@ -58,5 +59,9 @@ static int e907_bench_run(const struct e907_bench_io *io, unsigned mask, unsigne
 failed:
     (void)io->stop(io->ctx);
     return -1;
+}
+static inline int e907_bench_run(const struct e907_bench_io *io, unsigned mask, unsigned cycles)
+{
+    return e907_bench_run_mode(io, mask, cycles, 0);
 }
 #endif

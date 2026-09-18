@@ -1,0 +1,12 @@
+$ pgrep -x e907_live_probe
+e907_live_probe SHA256 cbb857f6f8880bfde7d7e274c9cd6831f5fe76d5093c527dd3c18acc637a8fba
+e907_servo.bin SHA256 952c5a95b44819a5cf0e5f34f248ace7000e44fb62c2e9e62bbe0633ef3563ac
+$ cd /tmp/e907_bench && { nohup ./e907_live_probe --hold-servo 2 ./e907_servo.bin >hold.log 2>&1 < /dev/null & echo $! >hold.pid; }
+$ cd /tmp/e907_bench && cat hold.log && ps -p "$(cat hold.pid)" -o pid=,stat=,args=
+PRECHECK mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+LEASE: Linux PWM1 unbound, idle registers saved; PWM0/PWM2 untouched
+ALLOC phys=64fea000 bytes=16384 firmware_bytes=1536
+BOOT magic=53525631 hart=00000000 misa=40909105 mhcr=00000000 cause=00000000 epc=00000000 tval=00000000
+HOLD: 333 Hz, 1600 us continuously; SIGTERM or Ctrl+C stops and restores hardware
+BENCH servo=2 PWM=5 pulse_us=1600 (other outputs disabled)
+  13233 Sl   ./e907_live_probe --hold-servo 2 ./e907_servo.bin

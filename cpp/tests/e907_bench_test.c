@@ -14,14 +14,15 @@ static int wait_ms(void *p,unsigned ms) {
     f->time+=ms;
     return f->cancel_at && f->time>=f->cancel_at ? -1 : 0;
 }
-static int set(void *p,unsigned ch,unsigned us) {
+static int set(void *p,unsigned mask,unsigned us) {
     struct fake *f=p;
-    CHECK(ch<4 && us>=1445 && us<=1555);
-    CHECK(!f->active || f->active==(1U<<ch));
+    CHECK(mask && !(mask&~15U) && us>=1400 && us<=1600);
+    CHECK(!f->active || f->active==mask);
     if(f->active) CHECK(f->time-f->last_set<=101);
     if(++f->calls==f->fail_at) return -1;
     if(!f->active) CHECK(us==1500);
-    f->active=1U<<ch;f->seen|=f->active;f->last_set=f->time;
+    f->active=mask;f->seen|=f->active;f->last_set=f->time;
+    for(unsigned ch=0;ch<4;ch++) if(mask&(1U<<ch))
     if(f->last_pulse[ch]!=us) { ++f->transitions[ch];f->last_pulse[ch]=us; }
     ++f->time; /* Simulate acknowledgment latency. */
     return 0;
@@ -66,6 +67,24 @@ int main(void) {
             CHECK(repeated.time>=180000 && repeated.time<=180108);
             CHECK(repeated.stops==24);
             for(unsigned ch=0;ch<4;ch++) CHECK(repeated.transitions[ch]==25);
+        }
+    }
+    /* Together mode must enable all four in one callback, finish in 15 s/round,
+       and stop the entire group on a failed command or interrupted wait. */
+    for(unsigned scenario=0;scenario<3;scenario++) {
+        struct fake group={0};
+        if(scenario==1) group.fail_at=5;
+        if(scenario==2) group.cancel_at=15400;
+        struct e907_bench_io io={&group,now,wait_ms,set,stop,NULL};
+        CHECK(e907_bench_run_mode(&io,15,2,1)==(scenario?-1:0));
+        CHECK(group.seen==15 && !group.active);
+        if(!scenario) {
+            CHECK(group.time>=30000 && group.time<=30018 && group.stops==4);
+            for(unsigned ch=0;ch<4;ch++) CHECK(group.transitions[ch]==17);
+        } else CHECK(group.time<16000);
+        for(unsigned ch=1;ch<4;ch++) {
+            CHECK(group.transitions[ch]==group.transitions[0]);
+            CHECK(group.last_pulse[ch]==group.last_pulse[0]);
         }
     }
     unsigned count=0;
