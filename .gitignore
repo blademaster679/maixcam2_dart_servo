@@ -1,0 +1,46 @@
+# Build outputs (host tools, MaixCDK and E907 firmware)
+build/
+build_*/
+build-*/
+cmake-build-*/
+/dist/
+/cpp/maixcdk/dist/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+*.o
+*.obj
+*.elf
+*.exe
+*.pdb
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# New local test captures. Keep curated reports/ and validation_* fixtures.
+/runs/
+/cpp/maixcdk/runs/
+
+# Downloaded SDK index/documents and extracted PDF text.
+# Keep reference C/header files and sources.json for reproducibility.
+/research/sdk_tree.json
+/research/e907_official/docs__board__*.pdf
+/research/e907_official/docs__board__*.txt
