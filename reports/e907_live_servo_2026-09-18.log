@@ -1,0 +1,37 @@
+PRECHECK mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+LEASE: Linux PWM1 unbound, idle registers saved; PWM0/PWM2 untouched
+ALLOC phys=64fb4000 bytes=16384 firmware_bytes=1536
+BOOT magic=53525631 hart=00000000 misa=40909105 mhcr=00000000 cause=00000000 epc=00000000 tval=00000000
+PWM step=0 channel=4 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=0 channel=5 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=0 channel=6 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=0 channel=7 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=1 channel=4 pulse_us=1522 control=0000001f low=35544 high=36528
+PWM step=1 channel=5 pulse_us=1522 control=0000001f low=35544 high=36528
+PWM step=1 channel=6 pulse_us=1522 control=0000001f low=35544 high=36528
+PWM step=1 channel=7 pulse_us=1522 control=0000001f low=35544 high=36528
+PWM step=2 channel=4 pulse_us=1478 control=0000001f low=36600 high=35472
+PWM step=2 channel=5 pulse_us=1478 control=0000001f low=36600 high=35472
+PWM step=2 channel=6 pulse_us=1478 control=0000001f low=36600 high=35472
+PWM step=2 channel=7 pulse_us=1478 control=0000001f low=36600 high=35472
+PWM step=3 channel=4 pulse_us=1555 control=0000001f low=34752 high=37320
+PWM step=3 channel=5 pulse_us=1555 control=0000001f low=34752 high=37320
+PWM step=3 channel=6 pulse_us=1555 control=0000001f low=34752 high=37320
+PWM step=3 channel=7 pulse_us=1555 control=0000001f low=34752 high=37320
+PWM step=4 channel=4 pulse_us=1445 control=0000001f low=37392 high=34680
+PWM step=4 channel=5 pulse_us=1445 control=0000001f low=37392 high=34680
+PWM step=4 channel=6 pulse_us=1445 control=0000001f low=37392 high=34680
+PWM step=4 channel=7 pulse_us=1445 control=0000001f low=37392 high=34680
+PWM step=5 channel=4 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=5 channel=5 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=5 channel=6 pulse_us=1500 control=0000001f low=36072 high=36000
+PWM step=5 channel=7 pulse_us=1500 control=0000001f low=36072 high=36000
+PASS: independent A53 MMIO readback of four different E907 pulse targets
+WATCHDOG host_elapsed_ms=999.214 trips=1 active_mask=0
+PASS: E907 four-channel register control, invalid-input rejection, stop, single-channel selection and 1s command watchdog
+RESTORE mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+RESTORE: PWM1 registers/pads restored and Linux driver rebound
+
+STDERR
+
+EXIT 0

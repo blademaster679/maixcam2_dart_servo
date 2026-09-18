@@ -1,0 +1,66 @@
+{
+  "retrieved_utc": "2026-09-18T05:01:33.756386+00:00",
+  "note": "Downloaded from official main; source hashes record the inspected content.",
+  "files": [
+    {
+      "file": "boot__bl1__common__include__chip_reg.h",
+      "sha256": "3b329f56c3c4a663ad96a46a37851a5ffdc8e0daf9ef33e7ad6aebe565ff0eb5",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/common/include/chip_reg.h"
+    },
+    {
+      "file": "boot__bl1__driver__include__riscv.h",
+      "sha256": "28ad8499eb0015e5aef7c8724be86de52808ef5a1213c7b9d3e9d0e137ba9769",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/driver/include/riscv.h"
+    },
+    {
+      "file": "boot__bl1__driver__riscv__riscv.c",
+      "sha256": "d7a01ec28ff68b1316b4a7e0021ef8eea6f8c4620727a78db3f146eb1a9b0cf7",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/driver/riscv/riscv.c"
+    },
+    {
+      "file": "boot__bl1__driver__riscv__riscv_regs.h",
+      "sha256": "51333779afeca60c1b90d7ddc086edefe67bf31c660e491602842cf4abd563d7",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/driver/riscv/riscv_regs.h"
+    },
+    {
+      "file": "build__projects__AX630C_emmc_arm64_k419_sipeed_maixcam2__project.mak",
+      "sha256": "eb360312e484b2ba1c1dad6527894c50e77e400d2737cfda38c316bd9458378d",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/build/projects/AX630C_emmc_arm64_k419_sipeed_maixcam2/project.mak"
+    },
+    {
+      "file": "docs__board__00 - AX SDK 使用说明.pdf",
+      "sha256": "339a5c4a9cf625f4582f9591f9b4d2ea1ec20907790a3dfdb3c37ac8aa144bed",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/docs/board/00 - AX SDK 使用说明.pdf"
+    },
+    {
+      "file": "docs__board__01 - AX 外围设备驱动开发指南.pdf",
+      "sha256": "aa769de10ce7577908dc2bfca9aebcc5780baaa122f737f442b4805029d23a14",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/docs/board/01 - AX 外围设备驱动开发指南.pdf"
+    },
+    {
+      "file": "docs__board__08 - AX 快速启动使用说明.pdf",
+      "sha256": "e42b509b1325f00c7d7faeb15f0ade498e950ce673ff2dcf126a5a86ff5e545c",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/docs/board/08 - AX 快速启动使用说明.pdf"
+    },
+    {
+      "file": "docs__board__35 - AX 内存使用说明及优化指南.pdf",
+      "sha256": "1f675056cd92d34ddf1a2a59f0627f36493c0819345ba7ea1a7af28491f5d9d3",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/docs/board/35 - AX 内存使用说明及优化指南.pdf"
+    },
+    {
+      "file": "riscv__drivers__timer64__drv_timer64.h",
+      "sha256": "9e07f9867bd293e2fd6fb700a2d7f04726c9b6b25aaf9251016dcd9ed11dcac8",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/timer64/drv_timer64.h"
+    },
+    {
+      "file": "riscv__risc-v__mc20e_e907_soc.h",
+      "sha256": "3f1c239c90280b81924f8065bb78dfc1f7d6b3b8a7b1e310dafe4c78e0fc5aff",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/risc-v/mc20e_e907_soc.h"
+    },
+    {
+      "file": "riscv__risc-v__soc.h",
+      "sha256": "a6895925332c829ef8fe65b312abef24b9b0979844a93493664034da79d6246a",
+      "source": "https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/risc-v/soc.h"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "clock": "host receive time is NOT actuation time",
+  "complete": true,
+  "end_record": "SERVO_END,2,stop_requested,0,failed,0\r",
+  "interrupted": false,
+  "measurement_source": "manual_video",
+  "options": {
+    "--input": "cpp/build/synthetic.log",
+    "--out": "validation_cpp_replay"
+  },
+  "rejected_records": 0,
+  "sequence_gaps": 0,
+  "tick_hz": 100
+}

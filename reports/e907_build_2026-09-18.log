@@ -1,0 +1,4 @@
+   text	   data	    bss	    dec	    hex	filename
+    148	      0	      0	    148	     94	/home/blade_master/pnx/maixcam2_servo_test/maixcam2_servo_test/build_e907_live/e907_probe.elf
+   text	   data	    bss	    dec	    hex	filename
+   1536	      0	     24	   1560	    618	/home/blade_master/pnx/maixcam2_servo_test/maixcam2_servo_test/build_e907_live/e907_servo.elf

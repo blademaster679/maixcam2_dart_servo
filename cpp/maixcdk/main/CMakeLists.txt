@@ -1,0 +1,6 @@
+get_filename_component(SERVO_CPP "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+list(APPEND ADD_INCLUDE "${SERVO_CPP}/vendor" "${SERVO_CPP}/src")
+list(APPEND ADD_SRCS "${SERVO_CPP}/src/bench.cpp")
+list(APPEND ADD_REQUIREMENTS basic peripheral)
+list(APPEND ADD_DEFINITIONS_PRIVATE -DSERVO_MAIXCDK=1 -std=c++17)
+register_component()

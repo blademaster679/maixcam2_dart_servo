@@ -1,0 +1,25 @@
+{
+  "utc": "2026-09-14T13:39:01.427994+00:00",
+  "hostname": "maixcam2-75c4",
+  "kernel": "4.19.125",
+  "model": "MaixCAM2",
+  "image_version": "maixcam2-2026-05-29-maixpy-v4.12.5",
+  "kernel_flags": {
+    "CONFIG_AXERA_RISCV_DRV": "y",
+    "CONFIG_AX_RISCV_SUPPORT": "disabled",
+    "CONFIG_AX_RISCV_LOAD_ROOTFS": "disabled",
+    "CONFIG_REMOTEPROC": "disabled"
+  },
+  "ax_riscv_bound_devices": [],
+  "riscv_dt_nodes": [],
+  "pwm": "platform/6062000.pwm2, 4 PWM devices\n pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n\nplatform/6061000.pwm1, 4 PWM devices\n pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n\nplatform/6060000.pwm0, 4 PWM devices\n pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal\n pwm-3   (sysfs               ): requested enabled period: 100000 ns duty: 47500 ns polarity: normal",
+  "iomem": "01b40000-01b4ffff : sdhc@1B40000\n02000000-020fffff : tsensor@2000000\n02300000-0230afff : pinctrl@0x2300000\n023f2000-023f2fff : audio_codec@0x23F2000\n04000000-0400006b : ax_jenc\n04010000-0401006b : vsi_vcx\n04020000-04020193 : hx170dec0\n04800000-048003ff : gpio@4800000\n04801000-048013ff : gpio@4801000\n04830000-048303ff : ax_hrtimer@4830000\n04840000-048403ff : watchdog@4840000\n04850000-048503ff : i2c@4850000\n04851000-048513ff : i2c@4851000\n04856000-048563ff : i2c@4856000\n04857000-048573ff : i2c@4857000\n04860000-048603ff : i2c_slv@4860000\n04880000-0488001f : serial\n04881000-0488101f : serial\n04882000-0488201f : serial\n048a0000-048a01ff : dma_per@48a0000\n06000000-060003ff : gpio@6000000\n06001000-060013ff : gpio@6001000\n06040000-060403ff : watchdog@6040000\n06050000-060503ff : i2s_mst@0\n06051000-060513ff : i2s_slv@1\n06071000-060713ff : spi@6071000\n06072000-060723ff : spi@6072000\n06080000-0608001f : serial\n06081000-0608101f : serial\n06082000-0608201f : serial\n0800c100-080fffff : dwc3@0x8000000\n104c0000-104cffff : ethernet@104C0000\n104d0000-104dffff : sdhc@104D0000\n104e0000-104effff : sdhc@104E0000\n104f0000-104f2fff : pinctrl@0x2300000\n40000000-4003ffff : System RAM\n  40000000-40025fff : reserved\n40080000-441fffff : System RAM\n  40280000-40d2ffff : Kernel code\n  40d30000-4124ffff : reserved\n  41250000-41432fff : Kernel data\n46200000-480effff : System RAM\n  48000000-480effff : reserved\n480f3000-5fffffff : System RAM\n  5ec00000-5edfffff : reserved\n  5eeac000-5fdfffff : reserved\n  5fe3b000-5febbfff : reserved\n  5febc000-5feebfff : reserved\n  5feee000-5feeefff : reserved\n  5feef000-5fef1fff : reserved\n  5fef2000-5fff1fff : reserved\n  5fff2000-5fffefff : reserved\n  5ffff000-5fffffff : reserved",
+  "cmdline": "mem=512M earlycon=uart8250,mmio32,0x4880000 board_id=0x5,boot_reason=0x00,initcall_debug=0 loglevel=8 usbcore.autosuspend=-1 root=/dev/mmcblk0p17 rootfstype=ext4 rw rootwait blkdevparts=mmcblk0:768K(spl),512K(ddrinit),256K(atf),256K(atf_b),1536K(uboot),1536K(uboot_b),1M(env),6M(logo),6M(logo_b),1M(optee),1M(optee_b),1M(dtb),1M(dtb_b),64M(kernel),64M(kernel_b),128M(boot),-(rootfs) logomode=vo0@dsi_dpi_video ",
+  "blockers": [
+    "Kernel AX_RISCV_SUPPORT is not verified enabled",
+    "No bound ax_riscv platform device",
+    "Matching E907 firmware, reserved memory and console must be verified before loading"
+  ],
+  "e907_execution_tested": false,
+  "scope": "Read-only Linux preflight; no PWM outputs or firmware changes"
+}

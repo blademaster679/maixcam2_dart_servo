@@ -1,0 +1,34 @@
+PRECHECK mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+LEASE: Linux PWM1 unbound, idle registers saved; PWM0/PWM2 untouched
+ALLOC phys=64fb5000 bytes=16384 firmware_bytes=1536
+BOOT magic=53525631 hart=00000000 misa=40909105 mhcr=00000000 cause=00000000 epc=00000000 tval=00000000
+PWM step=0 channel=4 pulse_us=1500 control=0000001f low=36072 high=36000
+RESTORE mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+RESTORE: PWM1 registers/pads restored and Linux driver rebound
+STDERR Command failed op=2 seq=5 ack=4 result=0
+
+SIGNAL_TEST_EXIT 1
+PASS: SIGTERM cleanup after E907 enabled PWM
+platform/6061000.pwm1, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6062000.pwm2, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+
+platform/6060000.pwm0, 4 PWM devices
+ pwm-0   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-1   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-2   ((null)              ): period: 0 ns duty: 0 ns polarity: normal
+ pwm-3   (sysfs               ): requested enabled period: 100000 ns duty: 47500 ns polarity: normal
+lrwxrwxrwx 1 root root 0 Sep 14 21:58 /sys/bus/platform/drivers/axera-pwm/6061000.pwm1 -> ../../../../devices/platform/soc/6061000.pwm1
+CMM_RELEASED
+
+STDERR
+
+EXIT 0

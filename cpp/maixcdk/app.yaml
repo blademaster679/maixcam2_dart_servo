@@ -1,0 +1,7 @@
+id: servo_bench_cpp
+name: Servo Bench C++
+version: 1.0.0
+author: Local
+desc: Four servo bench test with command telemetry
+files:
+  config.json: config.json

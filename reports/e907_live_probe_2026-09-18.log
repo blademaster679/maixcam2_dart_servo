@@ -1,0 +1,9 @@
+PRECHECK mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+ALLOC phys=64f9d000 bytes=16384 firmware_bytes=148
+BOOT magic=45393037 hart=00000000 misa=40909105 mhcr=00000000 cause=00000000 epc=00000000 tval=00000000
+PASS: 100 E907 shared-memory request/reply checks; no PWM/UART access
+RESTORE mux=08090b6d clock=0003fefb reset=3c030008 base=00000000
+
+STDERR
+
+EXIT 0

@@ -1,0 +1,4 @@
+SERVO_META,tick_hz,100
+SERVO,1,1,4,1500,333,10,10,0
+SERVO,2,1,4,1522,333,11,11,0
+SERVO_END,2,stop_requested,0,failed,0

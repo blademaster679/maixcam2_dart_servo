@@ -1,0 +1,54 @@
+{
+  "bec_measured_v": null,
+  "channels": [
+    {
+      "center_us": 1500,
+      "max_us": 1600,
+      "min_us": 1400,
+      "pin": "B2",
+      "pwm": 4,
+      "servo": 1
+    },
+    {
+      "center_us": 1500,
+      "max_us": 1600,
+      "min_us": 1400,
+      "pin": "B3",
+      "pwm": 5,
+      "servo": 2
+    },
+    {
+      "center_us": 1500,
+      "max_us": 1600,
+      "min_us": 1400,
+      "pin": "A30",
+      "pwm": 6,
+      "servo": 3
+    },
+    {
+      "center_us": 1500,
+      "max_us": 1600,
+      "min_us": 1400,
+      "pin": "A31",
+      "pwm": 7,
+      "servo": 4
+    }
+  ],
+  "clock": "steady_clock nanoseconds; commands NOT motion feedback",
+  "frequency_hz": 333,
+  "hold_s": 1.5,
+  "load_description": "待填写：空载或实际连杆/舵面",
+  "mode": "DRY_RUN",
+  "offsets_us": [
+    0,
+    22,
+    0,
+    -22,
+    0,
+    55,
+    0,
+    -55,
+    0
+  ],
+  "repetitions": 3
+}

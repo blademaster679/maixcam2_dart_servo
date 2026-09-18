@@ -1,0 +1,3 @@
+seq,servo,pwm,pulse_us,frequency_hz,before_tick,after_tick,rc,host_receive_ns,measured_angle_deg
+1,1,4,1500,333,10,10,0,1789703468328050000,
+2,1,4,1522,333,11,11,0,1789703468328050000,

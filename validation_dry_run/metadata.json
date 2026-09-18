@@ -1,0 +1,56 @@
+{
+  "frequency_hz": 333,
+  "hold_s": 1.5,
+  "repetitions": 3,
+  "offsets_us": [
+    0,
+    22,
+    0,
+    -22,
+    0,
+    55,
+    0,
+    -55,
+    0
+  ],
+  "bec_measured_v": null,
+  "load_description": "待填写：空载或实际连杆/舵面",
+  "channels": [
+    {
+      "servo": 1,
+      "pin": "B2",
+      "pwm": 4,
+      "center_us": 1500,
+      "min_us": 1400,
+      "max_us": 1600
+    },
+    {
+      "servo": 2,
+      "pin": "B3",
+      "pwm": 5,
+      "center_us": 1500,
+      "min_us": 1400,
+      "max_us": 1600
+    },
+    {
+      "servo": 3,
+      "pin": "A30",
+      "pwm": 6,
+      "center_us": 1500,
+      "min_us": 1400,
+      "max_us": 1600
+    },
+    {
+      "servo": 4,
+      "pin": "A31",
+      "pwm": 7,
+      "center_us": 1500,
+      "min_us": 1400,
+      "max_us": 1600
+    }
+  ],
+  "mode": "DRY_RUN",
+  "unix_start": 1789702595.5664864,
+  "clock": "time.monotonic_ns; command timestamps, not physical motion",
+  "measured_angle_source": "video annotation; absent in commands.csv"
+}
