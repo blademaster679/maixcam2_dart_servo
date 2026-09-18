@@ -1,5 +1,7 @@
 # MaixCAM2 四舵测试：C++ 主机工具 + E907 C 固件
 
+完整当日资料见 [2026-09-18 测试总结](reports/servo_test_summary_2026-09-18.md)，包含日志、录像抽帧和波形示意；采集格式修复见 [日志协议](firmware/e907_live/TELEMETRY.md)。
+
 接四个舵机进行独立台架测试，请使用新增的 `--bench-servo` 模式，见 [接线、上传及运行步骤](firmware/e907_live/BENCH.md)。支持单路或四路依次小幅往返；已编译和通过本地测试，实际转动尚待验证。
 
 ## 最新实机结果：E907 临时 RAM 控制已跑通
@@ -95,7 +97,7 @@ ctest --test-dir /tmp/servo-build --output-on-failure
 | 3 | A30 | 6 | pwm_12 |
 | 4 | A31 | 7 | pwm_13 |
 
-供电用BEC，舵机与板卡共地，不用GPIO/3.3V引脚给电机供电。把**舵机插头处实测电压**填到config.json的bec_measured_v，不能用7.4V电池标称代替。你的厂家截图支持7.4V，标称0.07s/60°、1.8kgf·cm；它不等于实际带载性能。
+V1 的 H2 舵机正极接 VBATT，回流经 Q3 到板卡 GND；上游是否经过 BEC 尚未核实，不能认定为稳压供电。不用 GPIO/3.3V 引脚给电机供电。把**舵机插头处实测电压**填到config.json的bec_measured_v，不能用7.4V电池标称代替。你的厂家截图支持7.4V，标称0.07s/60°、1.8kgf·cm；它不等于实际带载性能。
 
 默认333Hz、中位1500µs，依次测试四个舵机，每路序列：
 

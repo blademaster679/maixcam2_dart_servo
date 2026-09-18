@@ -31,3 +31,7 @@ foreach(test firmware pwm_extension e907_bench)
   endif()
   add_test(NAME ${test}_simulation COMMAND ${test}_test)
 endforeach()
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+add_test(NAME collector_protocol COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/collect_test.py $<TARGET_FILE:servo_collect>
+  ${CMAKE_CURRENT_SOURCE_DIR}/..)

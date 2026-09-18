@@ -114,7 +114,7 @@ static int bench_stop(void *ctx){
  for(unsigned ch=0;ch<4;ch++)if((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1)return -1;
  return rd(b->shared,68)==0?0:-1;
 }
-static int bench_set(void *ctx,unsigned mask,unsigned pulse){
+static int bench_set_impl(void *ctx,unsigned mask,unsigned pulse){
  struct bench_context *b=ctx;
  if(cancelled||!mask||(mask&~15U)||rd(b->shared,128))return -1;
  wr(b->shared,48,mask);
@@ -125,11 +125,22 @@ static int bench_set(void *ctx,unsigned mask,unsigned pulse){
   if(mask&(1U<<ch)){if(check_pwm(b->shared,b->pwm,ch,pulse))return -1;}
   else if((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1)return -1;
  }
- if(b->last_channel!=mask||b->last_pulse!=pulse){
-  printf("BENCH mask=0x%x pulse_us=%u (all selected outputs verified)\n",mask,pulse);
-  b->last_channel=mask;b->last_pulse=pulse;
- }
  return 0;
+}
+static uint64_t monotonic_ns(void){
+ struct timespec t;
+ if(clock_gettime(CLOCK_MONOTONIC,&t)){cancelled=1;return 0;}
+ return (uint64_t)t.tv_sec*1000000000ULL+(uint64_t)t.tv_nsec;
+}
+static int bench_set(void *ctx,unsigned mask,unsigned pulse){
+ struct bench_context *b=ctx;
+ uint64_t begin=monotonic_ns();
+ int rc=bench_set_impl(ctx,mask,pulse);
+ uint64_t end=monotonic_ns();
+ /* A53 submit/check interval and E907 snapshot tick, NOT mechanical timestamps. */
+ printf("BENCH_CMD,%u,%u,%u,333,%llu,%llu,%u,%d\n",b->seq,mask,pulse,
+        (unsigned long long)begin,(unsigned long long)end,rd(b->shared,76),rc);
+ return rc;
 }
 static void bench_cycle_begin(void *ctx,unsigned cycle,unsigned total){
  struct bench_context *b=ctx;b->last_channel=4;b->last_pulse=0;
@@ -273,5 +284,6 @@ int main(int argc,char **argv){
  if(pwm!=MAP_FAILED)munmap((void*)pwm,4096);
  if(fd>=0)close(fd);
  if(lockfd>=0)close(lockfd);
+ if(bench||hold)printf("BENCH_END,%d\n",rc);
  return rc;
 }
