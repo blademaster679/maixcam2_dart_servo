@@ -16,6 +16,7 @@
 #include <sys/file.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include "e907_bench_sequence.h"
 #define REGION_SIZE 16384U
 #define COMM_BASE 0x02340000UL
 #define RESET_MASK (3U<<16)
@@ -93,9 +94,63 @@ static int servo_test(volatile uint32_t *s,volatile uint32_t *pwm){
  puts("PASS: E907 four-channel register control, invalid-input rejection, stop, single-channel selection and 1s command watchdog");
  return 0;
 }
+struct bench_context {
+ volatile uint32_t *shared,*pwm;
+ unsigned seq,last_channel,last_pulse;
+};
+static uint64_t bench_now(void *ctx){
+ struct timespec t;(void)ctx;
+ if(clock_gettime(CLOCK_MONOTONIC,&t)){perror("monotonic clock");cancelled=1;return 0;}
+ return (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_nsec/1000000;
+}
+static int bench_wait(void *ctx,unsigned ms){
+ uint64_t end=bench_now(ctx)+ms;
+ while(!cancelled&&bench_now(ctx)<end)pause_ms();
+ return cancelled?-1:0;
+}
+static int bench_stop(void *ctx){
+ struct bench_context *b=ctx;
+ if(command(b->shared,3,++b->seq,0))return -1;
+ for(unsigned ch=0;ch<4;ch++)if((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1)return -1;
+ return rd(b->shared,68)==0?0:-1;
+}
+static int bench_set(void *ctx,unsigned channel,unsigned pulse){
+ struct bench_context *b=ctx;
+ /* A missed lease is a failed test: never silently resume motion. */
+ if(cancelled||rd(b->shared,128))return -1;
+ wr(b->shared,48,1U<<channel);wr(b->shared,52+4*channel,pulse);
+ if(command(b->shared,2,++b->seq,0)||rd(b->shared,128)||
+    rd(b->shared,68)!=(1U<<channel)||check_pwm(b->shared,b->pwm,channel,pulse))return -1;
+ for(unsigned ch=0;ch<4;ch++)if(ch!=channel&&
+    ((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1))return -1;
+ if(b->last_channel!=channel||b->last_pulse!=pulse){
+  printf("BENCH servo=%u PWM=%u pulse_us=%u (other outputs disabled)\n",channel+1,channel+4,pulse);
+  b->last_channel=channel;b->last_pulse=pulse;
+ }
+ return 0;
+}
+static void bench_cycle_begin(void *ctx,unsigned cycle,unsigned total){
+ struct bench_context *b=ctx;b->last_channel=4;b->last_pulse=0;
+ printf("BENCH cycle=%u/%u\n",cycle,total);
+}
+static int servo_bench(volatile uint32_t *s,volatile uint32_t *pwm,unsigned mask,unsigned cycles){
+ struct bench_context b={s,pwm,0,4,0};
+ const struct e907_bench_io io={&b,bench_now,bench_wait,bench_set,bench_stop,bench_cycle_begin};
+ if(rd(s,132)!=1){fprintf(stderr,"Unsupported servo ABI\n");return -1;}
+ wr(s,136,0x50574D31U);
+ puts("BENCH: fixed sequence, 333 Hz, 1445..1555 us; Ctrl+C stops and restores hardware");
+ if(e907_bench_run(&io,mask,cycles)){
+  fprintf(stderr,"BENCH interrupted/failed; restoring hardware\n");return -1;
+ }
+ if(command(s,5,++b.seq,0))return -1;
+ puts("PASS: bench commands and register readback; visually confirm actual servo motion");
+ return 0;
+}
 int main(int argc,char **argv){
  int rc=1,fd=-1,lockfd=-1,initialized=0,allocated=0,touched=0,leased=0,saved_pwm=0;void *lib=NULL,*mem=NULL;
- int servo=argc==3&&!strcmp(argv[1],"--run-servo-test");
+ int bench=(argc==4||argc==6)&&!strcmp(argv[1],"--bench-servo");
+ int servo=bench||(argc==3&&!strcmp(argv[1],"--run-servo-test"));
+ unsigned bench_mask=0,bench_cycles=1;
  volatile uint32_t *pad=MAP_FAILED,*periph=MAP_FAILED,*pwm=MAP_FAILED;
  const unsigned poff[4]={0x84,0x90,0x54,0x60};uint32_t old_pad[4],old_pwm[4][3],old_pclk=0,old_chclk=0;
  volatile uint32_t *reg=MAP_FAILED,*shared=NULL;uint64_t phys=0;
@@ -104,11 +159,18 @@ int main(int argc,char **argv){
  int (*alloc)(uint64_t*,void**,uint32_t,uint32_t,const char*)=NULL;
  int (*release)(uint64_t,void*)=NULL;
  unsigned char blob[4096];size_t len=0;FILE *file=NULL;
- if(argc!=3||(strcmp(argv[1],"--run-probe")&&!servo)){fprintf(stderr,"Usage: %s --run-probe|--run-servo-test firmware.bin\n",argv[0]);return 2;}
+ if(bench){
+  if(!strcmp(argv[2],"all"))bench_mask=15;
+  else if(strlen(argv[2])==1&&argv[2][0]>='1'&&argv[2][0]<='4')bench_mask=1U<<(argv[2][0]-'1');
+  if(argc==6&&(strcmp(argv[4],"--cycles")||e907_bench_parse_cycles(argv[5],&bench_cycles)))bench_mask=0;
+ }
+ if((!bench&&(argc!=3||(strcmp(argv[1],"--run-probe")&&!servo)))||(bench&&!bench_mask)){
+  fprintf(stderr,"Usage: %s --run-probe|--run-servo-test firmware.bin\n       %s --bench-servo 1|2|3|4|all e907_servo.bin [--cycles N]\nN: 1..10000, default 1\n",argv[0],argv[0]);return 2;
+ }
  setvbuf(stdout,NULL,_IOLBF,0);signal(SIGINT,onsignal);signal(SIGTERM,onsignal);signal(SIGHUP,onsignal);
  lockfd=open("/tmp/servo_e907.lock",O_CREAT|O_RDWR,0600);
  if(lockfd<0||flock(lockfd,LOCK_EX|LOCK_NB)){fprintf(stderr,"Another E907 loader is running\n");goto out;}
- file=fopen(argv[2],"rb");if(!file){perror("firmware");goto out;}
+ file=fopen(argv[bench?3:2],"rb");if(!file){perror("firmware");goto out;}
  len=fread(blob,1,sizeof(blob),file);int read_error=ferror(file);fclose(file);file=NULL;
  if(read_error||!len||len>=sizeof(blob)){fprintf(stderr,"Invalid probe size\n");goto out;}
  fd=open("/dev/mem",O_RDWR|O_SYNC);if(fd<0){perror("/dev/mem");goto out;}
@@ -149,7 +211,7 @@ int main(int argc,char **argv){
  for(unsigned i=0;i<1000&&!cancelled&&rd(shared,0)==0;i++)pause_ms();
  printf("BOOT magic=%08x hart=%08x misa=%08x mhcr=%08x cause=%08x epc=%08x tval=%08x\n",rd(shared,0),rd(shared,4),rd(shared,8),rd(shared,12),rd(shared,36),rd(shared,40),rd(shared,44));
  if(cancelled||rd(shared,0)!=(servo?0x53525631U:0x45393037U)||rd(shared,12)!=0){fprintf(stderr,"Probe not ready or cache state unexpected\n");goto out;}
- if(servo){rc=servo_test(shared,pwm)?1:0;goto out;}
+ if(servo){rc=(bench?servo_bench(shared,pwm,bench_mask,bench_cycles):servo_test(shared,pwm))?1:0;goto out;}
  for(unsigned seq=1;seq<=100&&!cancelled;seq++){
   uint32_t value=0x90700000U+seq;wr(shared,28,value);wr(shared,16,1);wr(shared,20,seq);
   unsigned wait;for(wait=0;wait<100&&rd(shared,24)!=seq&&!cancelled;wait++)pause_ms();

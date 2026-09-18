@@ -43,6 +43,8 @@ export ARM_CC=/path/to/aarch64-none-linux-gnu-gcc
 
 ## 板端使用
 
+接舵机观察转动请使用新增的 `--bench-servo 1|2|3|4|all`，完整接线与命令见 [独立台架测试](BENCH.md)。该模式已通过本地编译和模拟测试，尚未进行带舵机实测。
+
 将三个产物 `e907_live_probe`、`e907_probe.bin`、`e907_servo.bin` 放入板卡同一目录，并给予加载器执行权限。
 
 ```sh
