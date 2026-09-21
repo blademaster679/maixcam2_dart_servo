@@ -24,4 +24,8 @@ for name in probe servo; do
   "$rv_size" "$output_dir/e907_$name.elf"
 done
 "$ARM_CC" -O2 -Wall -Wextra -Werror -std=c99 tools/e907_live_probe.c -ldl -o "$output_dir/e907_live_probe"
-sha256sum "$output_dir/e907_probe.bin" "$output_dir/e907_servo.bin" "$output_dir/e907_live_probe" > "$output_dir/SHA256SUMS"
+# Relative names keep the checksum manifest valid after moving the output folder.
+(
+    cd -- "$output_dir"
+    sha256sum e907_probe.bin e907_servo.bin e907_live_probe > SHA256SUMS
+)

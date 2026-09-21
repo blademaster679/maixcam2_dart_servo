@@ -4,6 +4,20 @@
 
 接四个舵机进行独立台架测试，请使用新增的 `--bench-servo` 模式，见 [接线、上传及运行步骤](firmware/e907_live/BENCH.md)。支持单路或四路依次小幅往返；已编译和通过本地测试，实际转动尚待验证。
 
+## 工作区路径与改名
+
+在 VS Code 中打开 `maixcam2_dart_servo` 根目录，CMake 源目录设置为
+`${workspaceFolder}/cpp`，构建目录设置为 `${workspaceFolder}/cpp/build_host`。
+脚本以自身位置或仓库根目录解析路径，移动项目后无需写死新的绝对路径。
+Windows 与 WSL 应使用各自的构建目录；已有 CMake 缓存包含旧路径时，先备份缓存目录，
+再按下文命令重新配置和构建。
+
+E907 构建输出的校验清单使用相对文件名，可在仓库根目录执行：
+
+```sh
+(cd build_e907_live && sha256sum -c SHA256SUMS)
+```
+
 ## 最新实机结果：E907 临时 RAM 控制已跑通
 
 2026-09-18 后续查阅官方 SDK 后，已在 `10.11.105.1` 上实际启动 E907，并完成四路 PWM
