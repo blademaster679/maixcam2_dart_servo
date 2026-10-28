@@ -35,9 +35,10 @@ venv/
 Thumbs.db
 *:Zone.Identifier
 
-# New local test captures. Keep curated reports/ and validation_* fixtures.
+# New local test captures and reports. Existing tracked files remain tracked.
 /runs/
 /cpp/maixcdk/runs/
+/reports/
 
 # Downloaded SDK index/documents and extracted PDF text.
 # Keep reference C/header files and sources.json for reproducibility.
