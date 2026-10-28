@@ -1,0 +1,6 @@
+# Use the Linux/WSL host build configured by this workspace's CMake Tools settings.
+# Keep embedded firmware and SDK reference sources outside this host-build rule.
+If:
+  PathMatch: cpp/.*
+CompileFlags:
+  CompilationDatabase: cpp/build_host

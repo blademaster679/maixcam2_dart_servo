@@ -1,5 +1,11 @@
 # MaixCAM2 四舵测试：C++ 主机工具 + E907 C 固件
 
+V1.1 底板新增 **ICM-42688-P + BMI270 双 IMU C/C++ 驱动与采集程序**，见
+[编译、运行和接线说明](cpp/imu/README.md)。BMI270 使用 SPI2 与 A27 软件片选，
+适配当前缺少 `spidev2.0` 的系统。下方旧舵机配置适用于 **V1**；其中 B2/B3 在 V1.1
+已接至 BMI270，不能沿用旧 PWM4/PWM5 映射运行舵机。
+采集工具支持静止零偏标定、参数保存与加载，以及原始数据和补偿数据的独立输出。
+
 完整当日资料见 [2026-09-18 测试总结](reports/servo_test_summary_2026-09-18.md)，包含日志、录像抽帧和波形示意；采集格式修复见 [日志协议](firmware/e907_live/TELEMETRY.md)。
 
 接四个舵机进行独立台架测试，请使用新增的 `--bench-servo` 模式，见 [接线、上传及运行步骤](firmware/e907_live/BENCH.md)。支持单路或四路依次小幅往返；已编译和通过本地测试，实际转动尚待验证。
@@ -11,6 +17,17 @@
 脚本以自身位置或仓库根目录解析路径，移动项目后无需写死新的绝对路径。
 Windows 与 WSL 应使用各自的构建目录；已有 CMake 缓存包含旧路径时，先备份缓存目录，
 再按下文命令重新配置和构建。
+
+Linux/WSL 下的 clangd 使用根目录 `.clangd` 指定的 `cpp/build_host/compile_commands.json`。
+首次打开或新增 C/C++ 源文件后，执行一次配置，更新头文件路径、语言标准和编译目标：
+
+```sh
+cmake -S cpp -B cpp/build_host -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+
+VS Code 的 `CMake: Configure` 也会更新该文件。`cmake.buildDirectory` 本身不会告诉 clangd
+到哪里找编译数据库；只运行 `tools/build_dual_imu.sh` 也不会生成数据库。双 IMU 的 Linux
+代码应在 WSL 中使用 Linux clangd 解析；如更换构建目录，需要同步调整 `.clangd`。
 
 E907 构建输出的校验清单使用相对文件名，可在仓库根目录执行：
 
