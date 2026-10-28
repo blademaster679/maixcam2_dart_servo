@@ -18,8 +18,8 @@
   "channels": [
     {
       "servo": 1,
-      "pin": "B2",
-      "pwm": 4,
+      "pin": "A31",
+      "pwm": 7,
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
@@ -27,8 +27,8 @@
     },
     {
       "servo": 2,
-      "pin": "B3",
-      "pwm": 5,
+      "pin": "A30",
+      "pwm": 6,
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
@@ -36,8 +36,8 @@
     },
     {
       "servo": 3,
-      "pin": "A30",
-      "pwm": 6,
+      "pin": "A25",
+      "pwm": 1,
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
@@ -45,14 +45,14 @@
     },
     {
       "servo": 4,
-      "pin": "A31",
-      "pwm": 7,
+      "pin": "A24",
+      "pwm": 0,
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
       "connector_signal_pin": 6
     }
   ],
-  "carrier_revision": "V1",
+  "carrier_revision": "V1.1",
   "connector": "H2"
 }

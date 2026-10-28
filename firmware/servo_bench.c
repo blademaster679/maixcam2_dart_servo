@@ -8,9 +8,9 @@
 #include <string.h>
 #include "drv_pwm.h"
 #include "ax_common.h"
+#include "servo_board.h"
 extern int servo_pwm_set_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us);
 static volatile int running, stop_requested;
-static const uint32_t pads[4] = {0x02304084,0x02304090,0x02304054,0x02304060};
 static uint32_t saved[4];
 static unsigned seq;
 static unsigned selected_mask = 15U;
@@ -18,9 +18,9 @@ static unsigned selected_mask = 15U;
 static int set_pulse(int i, int pulse)
 {
     unsigned before = (unsigned)rt_tick_get();
-    int rc = servo_pwm_set_us((pwm_e)(4+i),333,(uint32_t)pulse);
+    int rc = servo_pwm_set_us((pwm_e)servo_channels[i].pwm,333,(uint32_t)pulse);
     unsigned after = (unsigned)rt_tick_get();
-    rt_kprintf("SERVO,%u,%d,%d,%d,333,%u,%u,%d\n",++seq,i+1,4+i,pulse,before,after,rc);
+    rt_kprintf("SERVO,%u,%d,%u,%d,333,%u,%u,%d\n",++seq,i+1,servo_channels[i].pwm,pulse,before,after,rc);
     return rc;
 }
 static void dwell(unsigned ms)
@@ -36,18 +36,19 @@ static void worker(void *arg)
     unsigned owned=0,muxed=0;
     (void)arg;
     rt_kprintf("SERVO_META,tick_hz,%u\n",(unsigned)RT_TICK_PER_SECOND);
+    rt_kprintf("SERVO_META,carrier,V1.1\n");
     for (i=0;i<4;i++) {
         int rc;
         if (stop_requested) goto cleanup;
         if (!(selected_mask & (1U << i))) continue;
-        rc=pwm_init((pwm_e)(4+i),333,50);
+        rc=pwm_init((pwm_e)servo_channels[i].pwm,333,50);
         if (rc) {
             rt_kprintf("SERVO_ERROR,init,%d,%d\n",i+1,rc);
             failed=1;goto cleanup;
         }
         owned |= 1U << i;
-        saved[i]=ax_readl(pads[i]);
-        ax_writel((saved[i]&~(7U<<16))|(3U<<16),pads[i]);
+        saved[i]=ax_readl(servo_channels[i].pad);
+        ax_writel((saved[i]&~(7U<<16))|(3U<<16),servo_channels[i].pad);
         muxed |= 1U << i;
         if (stop_requested) goto cleanup;
         if (set_pulse(i,1500)) {failed=1;goto cleanup;}
@@ -64,14 +65,14 @@ static void worker(void *arg)
         }
 cleanup:
     for (i=0;i<4;i++) if (owned & (1U << i)) {
-        int stop_rc=pwm_stop((pwm_e)(4+i));
-        int deinit_rc=pwm_deinit((pwm_e)(4+i));
+        int stop_rc=pwm_stop((pwm_e)servo_channels[i].pwm);
+        int deinit_rc=pwm_deinit((pwm_e)servo_channels[i].pwm);
         if (stop_rc || deinit_rc) {
             failed=1;
             rt_kprintf("SERVO_ERROR,cleanup,%d,%d,%d\n",i+1,stop_rc,deinit_rc);
         }
     }
-    for (i=0;i<4;i++) if (muxed & (1U << i)) ax_writel(saved[i],pads[i]);
+    for (i=0;i<4;i++) if (muxed & (1U << i)) ax_writel(saved[i],servo_channels[i].pad);
     rt_kprintf("SERVO_END,%u,stop_requested,%d,failed,%d\n",seq,stop_requested,failed);
     running=0;
 }
@@ -94,11 +95,8 @@ static void servo_bench(int argc,char **argv)
         }
         mask=1U << (argv[2][0]-'1');
     }
-    if ((mask & 12U) && !strcmp(RT_CONSOLE_DEVICE_NAME,"uart1")) {
+    if ((mask & 3U) && !strcmp(RT_CONSOLE_DEVICE_NAME,"uart1")) {
         rt_kprintf("REFUSED: relocate UART1 console before using A30/A31 PWM.\n");return;
-    }
-    if ((mask & 3U) && !strcmp(RT_CONSOLE_DEVICE_NAME,"uart3")) {
-        rt_kprintf("REFUSED: relocate UART3 console before using B2/B3 PWM.\n");return;
     }
     if (running) {rt_kprintf("Already running\n");return;}
     selected_mask=mask;running=1;stop_requested=0;seq=0;

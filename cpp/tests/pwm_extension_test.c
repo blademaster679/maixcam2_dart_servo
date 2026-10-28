@@ -13,15 +13,16 @@ void ax_writel(uint32_t v,uint32_t a){CHECK(a/4<256);regs[a/4]=v;writes++;}
 int pwm_stop(pwm_e p){stops++;if(stop_fail)return -7;regs[(pwm_base_addr[p/4]+PWM_CONTROLREG_OFF(p%4))/4]&=~1U;return 0;}
 int pwm_start(pwm_e p){starts++;if(start_fail)return -8;regs[(pwm_base_addr[p/4]+PWM_CONTROLREG_OFF(p%4))/4]|=1U;return 0;}
 #include "../../firmware/pwm_us_extension.c.inc"
-int main(void){unsigned before;int p;
- CHECK(servo_pwm_set_us(pwm_10,333,1500)==-2);pwm_status[1].channel_status=15;
- CHECK(servo_pwm_set_us(pwm_00,333,1500)==-1);CHECK(servo_pwm_set_us(pwm_10,332,1500)==-1);CHECK(servo_pwm_set_us(pwm_10,333,1399)==-1);CHECK(servo_pwm_set_us(pwm_10,333,1601)==-1);CHECK(!writes&&!starts&&!stops);
- for(p=4;p<8;p++){CHECK(!servo_pwm_set_us((pwm_e)p,333,1500));CHECK(ax_readl(256+PWM_LOADCOUNT_OFF(p%4))==36072);CHECK(ax_readl(256+PWM_LOADCOUNT2_OFF(p%4))==36000);}
- before=writes;CHECK(!servo_pwm_set_us(pwm_10,333,1500));CHECK(writes==before&&starts==4&&stops==4);
- CHECK(!servo_pwm_set_us(pwm_10,333,1522));CHECK(ax_readl(256+PWM_LOADCOUNT2_OFF(0))==36528);
- CHECK(!servo_pwm_set_us(pwm_10,50,1400));CHECK(ax_readl(256+PWM_LOADCOUNT_OFF(0))==446400);
- stop_fail=1;before=writes;CHECK(servo_pwm_set_us(pwm_10,333,1500)==-7);CHECK(writes==before);stop_fail=0;
- start_fail=1;CHECK(servo_pwm_set_us(pwm_10,333,1500)==-8);start_fail=0;
- before=starts;CHECK(!servo_pwm_set_us(pwm_10,333,1500));CHECK(starts==before+1);
- puts("PASS: PWM bounds, channel registers, pulse arithmetic, unchanged-command skip, stop/start errors; simulated registers only");return 0;
+int main(void){unsigned before;const unsigned targets[]={7,6,1,0};
+ CHECK(servo_pwm_set_us(pwm_00,333,1500)==-2);pwm_status[0].channel_status=3;pwm_status[1].channel_status=12;
+ for(unsigned p=2;p<=5;++p)CHECK(servo_pwm_set_us((pwm_e)p,333,1500)==-1);
+ CHECK(servo_pwm_set_us(pwm_00,332,1500)==-1);CHECK(servo_pwm_set_us(pwm_00,333,1399)==-1);CHECK(servo_pwm_set_us(pwm_00,333,1601)==-1);CHECK(!writes&&!starts&&!stops);
+ for(unsigned i=0;i<4;++i){unsigned p=targets[i];CHECK(!servo_pwm_set_us((pwm_e)p,333,1500));CHECK(ax_readl(pwm_base_addr[p/4]+PWM_LOADCOUNT_OFF(p%4))==36072);CHECK(ax_readl(pwm_base_addr[p/4]+PWM_LOADCOUNT2_OFF(p%4))==36000);}
+ before=writes;CHECK(!servo_pwm_set_us(pwm_00,333,1500));CHECK(writes==before&&starts==4&&stops==4);
+ CHECK(!servo_pwm_set_us(pwm_00,333,1522));CHECK(ax_readl(PWM_LOADCOUNT2_OFF(0))==36528);
+ CHECK(!servo_pwm_set_us(pwm_00,50,1400));CHECK(ax_readl(PWM_LOADCOUNT_OFF(0))==446400);
+ stop_fail=1;before=writes;CHECK(servo_pwm_set_us(pwm_00,333,1500)==-7);CHECK(writes==before);stop_fail=0;
+ start_fail=1;CHECK(servo_pwm_set_us(pwm_00,333,1500)==-8);start_fail=0;
+ before=starts;CHECK(!servo_pwm_set_us(pwm_00,333,1500));CHECK(starts==before+1);
+ puts("PASS: V1.1 PWM0/1/6/7, reject PWM2..5, pulse arithmetic and stop/start errors");return 0;
 }

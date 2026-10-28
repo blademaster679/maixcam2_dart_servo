@@ -1,5 +1,7 @@
 # E907 RAM 控制与实机结果
 
+当前代码适用于 **V1.1**：舵机 1/2/3/4 对应 A31/A30/A25/A24、PWM7/6/1/0。加载器与固件必须成对更新为 ABI v2；详见 [新版接线与验证范围](../V1_1_WIRING.md)。下文 2026-09-18 实机记录属于 V1，不代表 V1.1 已实机验证。
+
 本目录是独立的裸机 E907 验证分支。它通过共享内存接收 A53 指令，由 E907 自己写 PWM 寄存器。没有使用 Linux PWM 代替小核输出，也没有把原 RT-Thread 固件宣称为已验证。
 
 ## 官方依据与实现边界
@@ -8,7 +10,7 @@
 
 - [AX 快速启动使用说明](https://github.com/sipeed/maix_ax620e_sdk/blob/main/docs/board/08%20-%20AX%20%E5%BF%AB%E9%80%9F%E5%90%AF%E5%8A%A8%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.pdf)：文档第 13–18 页（PDF 第 14–19 页）的 RTT 工具链、构建、共享外设和 UART 说明。标准启动由引导阶段加载签名 RT-Thread 镜像。
 - [BL1 riscv_boot_up](https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/driver/riscv/riscv.c) 和 [chip_reg.h](https://github.com/sipeed/maix_ax620e_sdk/blob/main/boot/bl1/common/include/chip_reg.h)：小核复位、启动地址、时钟和释放复位顺序。
-- [小核 PWM 驱动](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/pwm/drv_pwm.c) 与 [寄存器定义](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/pwm/drv_pwm_reg.h)：PWM1 对应 PWM4–7、24 MHz 时钟、周期/高电平计数与使能方式。
+- [小核 PWM 驱动](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/pwm/drv_pwm.c) 与 [寄存器定义](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/pwm/drv_pwm_reg.h)：PWM 控制器 0/1 分别对应通道 0–3/4–7、24 MHz 时钟、周期/高电平计数与使能方式。
 - [SoC 定义](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/risc-v/mc20e_e907_soc.h) 与 [timer64 实现](https://github.com/sipeed/maix_ax620e_sdk/blob/main/riscv/drivers/timer64/drv_timer64.c)：读取现有 24 MHz timer64 实现目标超时，不改写系统定时器。
 - 官方 MSP `ax_sys_api.h` 中 `AX_SYS_MemAlloc` / `AX_SYS_MemFree`：申请和释放独占、非缓存映射的 CMM 内存。本机参考头文件位于 MaixCDK 的 maixcam2_msp 组件，板上实际链接 `/opt/lib/libax_sys.so`。
 
@@ -19,13 +21,13 @@
 ## 结构
 
 - `probe.S`：148 字节的 RV32 命令应答探针，仅访问所分配的共享页，返回输入值按位取反。
-- `start.S`、`servo.c`：1536 字节程序镜像，使用实际 `pwm_us_extension.c.inc`；配置四路 PWM，并独立执行超时停机。
+- `start.S`、`servo.c`：当前 1772 字节程序镜像，使用实际 `pwm_us_extension.c.inc`；配置四路 PWM，并独立执行超时停机。
 - `../../tools/e907_live_probe.c`：A53 Linux 加载器与有界测试驱动。申请 16 KiB CMM 内存，程序位于首个 4 KiB，共享页位于 +0x1000，栈顶 +0x4000。
 - `../../tools/build_e907_live.sh`：编译脚本。生成 RV32 ELF/bin 与 AArch64 Linux 加载器。
 
 启动条件严格限制为当前已验证板型/内存范围：两条 E907 reset 位均置位、E907 时钟关闭、旧启动地址为 0，分配的物理地址位于 `0x60000000–0x80000000`。不满足则拒绝执行。
 
-PWM 测试先确认 Linux PWM1 无 requested/enabled 用户，再临时解绑 `6061000.pwm1`，保存 PWM、pad 和时钟状态。执行结束/错误/SIGINT/SIGTERM/SIGHUP 时先复位小核，再恢复外设、重新绑定 Linux 驱动并释放 CMM 内存。PWM0/PWM2 不解绑。
+PWM 测试先确认 Linux PWM0/PWM1 均无 requested/enabled 用户，再临时解绑 `6060000.pwm0`、`6061000.pwm1`。保存并恢复的通道为 PWM7/6/1/0；PWM2/3/4/5 通道寄存器不改动。A24/A25 的 I2C0 复用由板级租约检查并临时释放。执行结束/错误/SIGINT/SIGTERM/SIGHUP 时先复位小核，再恢复外设、驱动绑定并释放 CMM 内存。PWM2 控制器不解绑。
 
 ## 构建
 
@@ -58,25 +60,25 @@ export ARM_CC=/path/to/aarch64-none-linux-gnu-gcc
 
 两种命令均是有界测试。加载器不是长期运行服务，不支持 `servo_bench start` 这样的 RTT shell 命令。`config.json` 不会自动下发到该程序。
 
-## 共享内存 ABI v1
+## 共享内存 ABI v2（V1.1）
 
 以 CMM 物理基址 + `0x1000` 为共享页起点，以下偏移单位为字节，小端 uint32。
 
 | 偏移 | 字段 | 写入方 |
 |---|---|---|
-| 0 | 就绪 magic：探针 `0x45393037`，PWM 服务 `0x53525631`；trap `0xBAD00907` | E907 |
+| 0 | 就绪 magic：探针 `0x45393037`，PWM 服务 `0x53525632`；trap `0xBAD00907` | E907 |
 | 4/8/12 | mhartid / misa / mhcr | E907 |
 | 16/20 | command / 请求序号 | A53 |
 | 24 | 已处理序号 | E907 |
 | 28/32 | 探针输入 / 结果（控制命令结果为 int32） | A53 / E907 |
 | 36/40/44 | mcause / mepc / mtval | E907 |
-| 48 | 通道 mask；bit0..3 对应 PWM4..7 | A53 |
+| 48 | 通道 mask；bit0..3 对应舵机 1..4，即 PWM7/6/1/0 | A53 |
 | 52/56/60/64 | 四路目标脉宽 μs | A53 |
 | 68/72 | active mask / 状态：0停止、1输出、2超时、3错误 | E907 |
 | 76 | 当前 timer64 低 32 位 | E907 |
 | 80..124 | 每路 3 个值：CONTROL / LOADCOUNT / LOADCOUNT2 | E907 |
-| 128/132 | 超时次数 / ABI 版本1 | E907 |
-| 136 | 已完成 PWM1 独占的标记 `0x50574D31` | 加载器 |
+| 128/132 | 超时次数 / ABI 版本2 | E907 |
+| 136 | 已完成 PWM0/PWM1 与 V1.1 引脚租约的标记 `0x50574D32` | 加载器 |
 
 command：1=探针式应答；2=更新 mask 中的目标；3=停止全部；4=读状态快照；5=停止并驻留，等待加载器复位。命令 2 仅接受 1400–1600μs、333Hz；未选通道保留原状态。只更新部分通道不等于停止其他通道。
 

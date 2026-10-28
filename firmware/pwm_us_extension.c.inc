@@ -3,13 +3,14 @@
  * Bench use only: stop/reload/start can truncate an active pulse. Validate
  * transitions on a scope before using this for response-time identification.
  */
+#include "servo_board.h"
 int servo_pwm_set_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us)
 {
     uint32_t base, ch, cycle, high;
     int rc;
-    if (pwm < pwm_10 || pwm > pwm_13 || (hz != 50 && hz != 333)
+    if (!servo_pwm_allowed((unsigned)pwm) || (hz != 50 && hz != 333)
         || pulse_us < 1400 || pulse_us > 1600) return -1;
-    if (!(pwm_status[1].channel_status & (1U << (pwm % 4)))) return -2;
+    if (!(pwm_status[pwm / 4].channel_status & (1U << (pwm % 4)))) return -2;
     cycle = PWM_CLK_SEL_FREQ_HZ / hz;
     high = (PWM_CLK_SEL_FREQ_HZ / 1000000U) * pulse_us;
     if (high >= cycle) return -3;

@@ -4,6 +4,7 @@
  * Refuses any core not held in reset with its clock disabled.
  */
 #define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include "e907_bench_sequence.h"
+#include "servo_v11_pins.h"
 #define REGION_SIZE 16384U
 #define COMM_BASE 0x02340000UL
 #define RESET_MASK (3U<<16)
@@ -28,24 +30,15 @@ static void barrier(void){__asm__ volatile("dmb sy" ::: "memory");}
 static void pause_ms(void){struct timespec t={0,1000000};nanosleep(&t,NULL);}
 static uint32_t rd(volatile uint32_t *r,unsigned off){uint32_t v=r[off/4];barrier();return v;}
 static void wr(volatile uint32_t *r,unsigned off,uint32_t v){barrier();r[off/4]=v;barrier();}
-static int driver_action(const char *action){
- char path[160];snprintf(path,sizeof(path),"/sys/bus/platform/drivers/axera-pwm/%s",action);
- int f=open(path,O_WRONLY);if(f<0)return -1;
- const char dev[]="6061000.pwm1";ssize_t n=write(f,dev,sizeof(dev)-1);close(f);
- return n==(ssize_t)sizeof(dev)-1?0:-1;
-}
-static int pwm_idle(void){
- char buf[16384];FILE *f=fopen("/sys/kernel/debug/pwm","r");if(!f)return 0;
- size_t n=fread(buf,1,sizeof(buf)-1,f);int error=ferror(f);fclose(f);buf[n]=0;if(error)return 0;
- char *p=strstr(buf,"platform/6061000.pwm1, 4 PWM devices");if(!p)return 0;
- char *end=strstr(p,"\n\n");if(!end)return 0;*end=0;
- return !strstr(p,"requested")&&!strstr(p,"enabled");
+static int driver_action(const char *action,unsigned group){
+ return servo_sysfs_action("/sys/bus/platform/drivers/axera-pwm",action,
+                           group?"6061000.pwm1":"6060000.pwm0");
 }
 static int command(volatile uint32_t *s,unsigned op,unsigned seq,int32_t expected){
  if(cancelled)return -1;
  wr(s,16,op);wr(s,20,seq);
  for(unsigned i=0;i<200&&!cancelled&&rd(s,24)!=seq;i++)pause_ms();
- if(cancelled||rd(s,0)!=0x53525631U||rd(s,24)!=seq||(int32_t)rd(s,32)!=expected){
+ if(cancelled||rd(s,0)!=SERVO_MAGIC||rd(s,24)!=seq||(int32_t)rd(s,32)!=expected){
   fprintf(stderr,"Command failed op=%u seq=%u ack=%u result=%d\n",op,seq,rd(s,24),(int32_t)rd(s,32));return -1;
  }return 0;
 }
@@ -53,11 +46,11 @@ static int check_pwm(volatile uint32_t *s,volatile uint32_t *pwm,unsigned ch,uns
  uint32_t ctl=rd(s,80+12*ch),low=rd(s,84+12*ch),high=rd(s,88+12*ch);
  if(ctl!=0x1f||high!=24*us||low+high!=72072)return -1;
  /* Independent A53 readback: the loader did not write these values. */
- return rd(pwm,8+20*ch)==ctl&&rd(pwm,20*ch)==low&&rd(pwm,0xb0+4*ch)==high?0:-1;
+ return rd(pwm,servo_control_offset(ch))==ctl&&rd(pwm,servo_low_offset(ch))==low&&rd(pwm,servo_high_offset(ch))==high?0:-1;
 }
 static int servo_test(volatile uint32_t *s,volatile uint32_t *pwm){
  unsigned seq=0;const unsigned pulses[]={1500,1522,1478,1555,1445,1500};
- wr(s,136,0x50574D31U); /* lease established by loader */
+ wr(s,136,SERVO_LEASE_MAGIC); /* lease established by loader */
  wr(s,48,16);if(command(s,2,++seq,-20))return -1;
  wr(s,48,15);for(unsigned ch=0;ch<4;ch++)wr(s,52+4*ch,1500);
  wr(s,52,1399);if(command(s,2,++seq,-21))return -1;
@@ -67,7 +60,7 @@ static int servo_test(volatile uint32_t *s,volatile uint32_t *pwm){
   if(command(s,2,++seq,0))return -1;
   for(unsigned ch=0;ch<4;ch++){
    uint32_t ctl=rd(s,80+12*ch),low=rd(s,84+12*ch),high=rd(s,88+12*ch);
-   printf("PWM step=%u channel=%u pulse_us=%u control=%08x low=%u high=%u\n",step,ch+4,pulses[step],ctl,low,high);
+   printf("PWM step=%u channel=%u pulse_us=%u control=%08x low=%u high=%u\n",step,servo_channels[ch].pwm,pulses[step],ctl,low,high);
    if(check_pwm(s,pwm,ch,pulses[step]))return -1;
   }
   for(unsigned i=0;i<50&&!cancelled;i++)pause_ms();
@@ -89,7 +82,7 @@ static int servo_test(volatile uint32_t *s,volatile uint32_t *pwm){
  printf("WATCHDOG host_elapsed_ms=%.3f trips=%u active_mask=%u\n",(end.tv_sec-begin.tv_sec)*1000.0+(end.tv_nsec-begin.tv_nsec)/1e6,rd(s,128),rd(s,68));
  if(rd(s,72)!=2||rd(s,128)!=1||rd(s,68)!=0){fprintf(stderr,"Watchdog failed\n");return -1;}
  if(command(s,4,++seq,0))return -1;
- for(unsigned ch=0;ch<4;ch++)if((rd(s,80+12*ch)|rd(pwm,8+20*ch))&1)return -1;
+ for(unsigned ch=0;ch<4;ch++)if((rd(s,80+12*ch)|rd(pwm,servo_control_offset(ch)))&1)return -1;
  if(command(s,5,++seq,0))return -1;
  puts("PASS: E907 four-channel register control, invalid-input rejection, stop, single-channel selection and 1s command watchdog");
  return 0;
@@ -111,7 +104,7 @@ static int bench_wait(void *ctx,unsigned ms){
 static int bench_stop(void *ctx){
  struct bench_context *b=ctx;
  if(command(b->shared,3,++b->seq,0))return -1;
- for(unsigned ch=0;ch<4;ch++)if((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1)return -1;
+ for(unsigned ch=0;ch<4;ch++)if((rd(b->shared,80+12*ch)|rd(b->pwm,servo_control_offset(ch)))&1)return -1;
  return rd(b->shared,68)==0?0:-1;
 }
 static int bench_set_impl(void *ctx,unsigned mask,unsigned pulse){
@@ -123,7 +116,7 @@ static int bench_set_impl(void *ctx,unsigned mask,unsigned pulse){
  if(command(b->shared,2,++b->seq,0)||rd(b->shared,128)||rd(b->shared,68)!=mask)return -1;
  for(unsigned ch=0;ch<4;ch++){
   if(mask&(1U<<ch)){if(check_pwm(b->shared,b->pwm,ch,pulse))return -1;}
-  else if((rd(b->shared,80+12*ch)|rd(b->pwm,8+20*ch))&1)return -1;
+  else if((rd(b->shared,80+12*ch)|rd(b->pwm,servo_control_offset(ch)))&1)return -1;
  }
  return 0;
 }
@@ -149,8 +142,8 @@ static void bench_cycle_begin(void *ctx,unsigned cycle,unsigned total){
 static int servo_bench(volatile uint32_t *s,volatile uint32_t *pwm,unsigned mask,unsigned cycles,int together){
  struct bench_context b={s,pwm,0,4,0};
  const struct e907_bench_io io={&b,bench_now,bench_wait,bench_set,bench_stop,bench_cycle_begin};
- if(rd(s,132)!=1){fprintf(stderr,"Unsupported servo ABI\n");return -1;}
- wr(s,136,0x50574D31U);
+ if(rd(s,132)!=SERVO_ABI_VERSION){fprintf(stderr,"Unsupported servo ABI\n");return -1;}
+ wr(s,136,SERVO_LEASE_MAGIC);
  puts("BENCH: fixed sequence, 333 Hz, 1400..1600 us; Ctrl+C stops and restores hardware");
  printf("BENCH mode=%s\n",together?"together":"sequential");
  if(e907_bench_run_mode(&io,mask,cycles,together)){
@@ -163,8 +156,8 @@ static int servo_bench(volatile uint32_t *s,volatile uint32_t *pwm,unsigned mask
 static int servo_hold(volatile uint32_t *s,volatile uint32_t *pwm,unsigned mask){
  struct bench_context b={s,pwm,0,4,0};
 
- if(rd(s,132)!=1){fprintf(stderr,"Unsupported servo ABI\n");return -1;}
- wr(s,136,0x50574D31U);
+ if(rd(s,132)!=SERVO_ABI_VERSION){fprintf(stderr,"Unsupported servo ABI\n");return -1;}
+ wr(s,136,SERVO_LEASE_MAGIC);
  if(bench_stop(&b))return -1;
  puts("HOLD: 333 Hz, 1600 us continuously; SIGTERM or Ctrl+C stops and restores hardware");
  while(!cancelled){
@@ -182,8 +175,9 @@ int main(int argc,char **argv){
  int hold=argc==4&&!strcmp(argv[1],"--hold-servo");
  int servo=bench||hold||(argc==3&&!strcmp(argv[1],"--run-servo-test"));
  unsigned bench_mask=0,bench_cycles=1;
- volatile uint32_t *pad=MAP_FAILED,*periph=MAP_FAILED,*pwm=MAP_FAILED;
- const unsigned poff[4]={0x84,0x90,0x54,0x60};uint32_t old_pad[4],old_pwm[4][3],old_pclk=0,old_chclk=0;
+ volatile uint32_t *periph=MAP_FAILED,*pwm=MAP_FAILED;
+ servo_pin_lease pins;servo_pins_init(&pins);
+ uint32_t old_pwm[4][3],old_pclk[2]={0,0},old_chclk=0;
  volatile uint32_t *reg=MAP_FAILED,*shared=NULL;uint64_t phys=0;
  uint32_t old_mux=0,old_clock=0,old_reset=0,old_base=0;
  int (*init)(void)=NULL,(*deinit)(void)=NULL;
@@ -211,21 +205,23 @@ int main(int argc,char **argv){
  printf("PRECHECK mux=%08x clock=%08x reset=%08x base=%08x\n",old_mux,old_clock,old_reset,old_base);
  if((old_reset&RESET_MASK)!=RESET_MASK||(old_clock&CLOCK_MASK)||old_base){fprintf(stderr,"REFUSED: E907 is not in expected unused reset state\n");goto out;}
  if(servo){
-  pad=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0x02304000);
+  if(!servo_pwm_groups_idle()){fprintf(stderr,"REFUSED: PWM0/PWM1 not idle\n");goto out;}
+  if(servo_pins_acquire(&pins)){fprintf(stderr,"REFUSED: V1.1 pin/I2C0 lease failed\n");goto out;}
   periph=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0x04870000);
-  pwm=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0x06061000);
-  if(pad==MAP_FAILED||periph==MAP_FAILED||pwm==MAP_FAILED){perror("map PWM");goto out;}
-  if(!pwm_idle()){fprintf(stderr,"REFUSED: PWM1 not idle\n");goto out;}
-  for(unsigned i=0;i<4;i++)old_pad[i]=rd(pad,poff[i]);
-  old_pclk=rd(periph,0x10);old_chclk=rd(periph,0x08);
-  if(driver_action("unbind")){perror("unbind PWM1");goto out;}leased=1;
-  wr(periph,0xc8,1);wr(periph,0xb8,15U<<23);
-  for(unsigned i=0;i<4;i++){
-   old_pwm[i][0]=rd(pwm,i*0x14+8);old_pwm[i][1]=rd(pwm,i*0x14);old_pwm[i][2]=rd(pwm,0xb0+4*i);
+  pwm=mmap(NULL,SERVO_PWM_MAP_BYTES,PROT_READ|PROT_WRITE,MAP_SHARED,fd,SERVO_PWM_BASE);
+  if(periph==MAP_FAILED||pwm==MAP_FAILED){perror("map PWM");goto out;}
+  old_pclk[0]=rd(periph,0x0c);old_pclk[1]=rd(periph,0x10);old_chclk=rd(periph,0x08);
+  for(unsigned g=0;g<2;++g){
+   if(driver_action("unbind",g)){perror("unbind PWM group");goto out;}leased|=1U<<g;
+  }
+  wr(periph,0xc0,1U<<31);wr(periph,0xc8,1);wr(periph,0xb8,SERVO_CHANNEL_CLOCK_MASK);
+  for(unsigned i=0;i<4;++i){
+   old_pwm[i][0]=rd(pwm,servo_control_offset(i));old_pwm[i][1]=rd(pwm,servo_low_offset(i));old_pwm[i][2]=rd(pwm,servo_high_offset(i));
   }
   saved_pwm=1;
-  for(unsigned i=0;i<4;i++)if(old_pwm[i][0]&1){fprintf(stderr,"REFUSED: hardware PWM already enabled\n");goto out;}
-  puts("LEASE: Linux PWM1 unbound, idle registers saved; PWM0/PWM2 untouched");
+  for(unsigned i=0;i<4;++i)if(old_pwm[i][0]&1){fprintf(stderr,"REFUSED: hardware servo PWM already enabled\n");goto out;}
+  puts("LEASE: PWM0/PWM1 and V1.1 pads; only PWM7/6/1/0 registers used; BMI270 B2/B3 untouched");
+  puts("BENCH_META,carrier,V1.1");
  }
  lib=dlopen("/opt/lib/libax_sys.so",RTLD_NOW|RTLD_LOCAL);if(!lib){fprintf(stderr,"%s\n",dlerror());goto out;}
  *(void**)(&init)=dlsym(lib,"AX_SYS_Init");*(void**)(&deinit)=dlsym(lib,"AX_SYS_Deinit");
@@ -242,8 +238,8 @@ int main(int argc,char **argv){
  wr(reg,0x5c,1U<<17);wr(reg,0x10,MUX_MASK);wr(reg,0x5c,1U<<16);
  for(unsigned i=0;i<1000&&!cancelled&&rd(shared,0)==0;i++)pause_ms();
  printf("BOOT magic=%08x hart=%08x misa=%08x mhcr=%08x cause=%08x epc=%08x tval=%08x\n",rd(shared,0),rd(shared,4),rd(shared,8),rd(shared,12),rd(shared,36),rd(shared,40),rd(shared,44));
- if(cancelled||rd(shared,0)!=(servo?0x53525631U:0x45393037U)||rd(shared,12)!=0){fprintf(stderr,"Probe not ready or cache state unexpected\n");goto out;}
- if(servo){rc=(hold?servo_hold(shared,pwm,bench_mask):(bench?servo_bench(shared,pwm,bench_mask,bench_cycles,together):servo_test(shared,pwm)))?1:0;goto out;}
+ if(cancelled||rd(shared,0)!=(servo?SERVO_MAGIC:0x45393037U)||rd(shared,12)!=0){fprintf(stderr,"Probe not ready or cache state unexpected\n");goto out;}
+ if(servo){if(rd(shared,132)!=SERVO_ABI_VERSION){fprintf(stderr,"Unsupported V1.1 servo ABI\n");goto out;}rc=(hold?servo_hold(shared,pwm,bench_mask):(bench?servo_bench(shared,pwm,bench_mask,bench_cycles,together):servo_test(shared,pwm)))?1:0;goto out;}
  for(unsigned seq=1;seq<=100&&!cancelled;seq++){
   uint32_t value=0x90700000U+seq;wr(shared,28,value);wr(shared,16,1);wr(shared,20,seq);
   unsigned wait;for(wait=0;wait<100&&rd(shared,24)!=seq&&!cancelled;wait++)pause_ms();
@@ -265,23 +261,28 @@ int main(int argc,char **argv){
   if((mux&MUX_MASK)!=(old_mux&MUX_MASK)||(clock&CLOCK_MASK)!=(old_clock&CLOCK_MASK)||(reset&RESET_MASK)!=(old_reset&RESET_MASK)||base!=old_base)rc=1;
  }
  if(leased){
-  if(saved_pwm)for(unsigned i=0;i<4;i++){
-   wr(pwm,i*0x14+8,0x1e);wr(pwm,i*0x14,old_pwm[i][1]);wr(pwm,0xb0+4*i,old_pwm[i][2]);wr(pwm,i*0x14+8,old_pwm[i][0]);
-   wr(pad,poff[i],old_pad[i]);
-   if(rd(pad,poff[i])!=old_pad[i]||rd(pwm,i*0x14+8)!=old_pwm[i][0]||rd(pwm,i*0x14)!=old_pwm[i][1]||rd(pwm,0xb0+4*i)!=old_pwm[i][2])rc=1;
+  if(saved_pwm&&touched)for(unsigned i=0;i<4;++i){
+   wr(pwm,servo_control_offset(i),0x1e);wr(pwm,servo_low_offset(i),old_pwm[i][1]);
+   wr(pwm,servo_high_offset(i),old_pwm[i][2]);wr(pwm,servo_control_offset(i),old_pwm[i][0]);
+   if(rd(pwm,servo_control_offset(i))!=old_pwm[i][0]||rd(pwm,servo_low_offset(i))!=old_pwm[i][1]||rd(pwm,servo_high_offset(i))!=old_pwm[i][2])rc=1;
   }
-  wr(periph,0xbc,(15U<<23)&~old_chclk);wr(periph,0xb8,(15U<<23)&old_chclk);
-  wr(periph,0xcc,1U&~old_pclk);wr(periph,0xc8,1U&old_pclk);
-  if(driver_action("bind")){perror("restore Linux PWM1 binding");rc=1;}
-  else puts("RESTORE: PWM1 registers/pads restored and Linux driver rebound");
+  uint32_t mask=((leased&1)?((1U<<19)|(1U<<20)):0)|((leased&2)?((1U<<25)|(1U<<26)):0);
+  wr(periph,0xbc,mask&~old_chclk);wr(periph,0xb8,mask&old_chclk);
+  if(leased&1){wr(periph,0xc4,(1U<<31)&~old_pclk[0]);wr(periph,0xc0,(1U<<31)&old_pclk[0]);}
+  if(leased&2){wr(periph,0xcc,1U&~old_pclk[1]);wr(periph,0xc8,1U&old_pclk[1]);}
+  if((rd(periph,0x08)&mask)!=(old_chclk&mask))rc=1;
+  if((leased&1)&&((rd(periph,0x0c)^old_pclk[0])&(1U<<31)))rc=1;
+  if((leased&2)&&((rd(periph,0x10)^old_pclk[1])&1U))rc=1;
+  for(int g=1;g>=0;--g)if(leased&(1U<<g))if(driver_action("bind",(unsigned)g)){perror("restore Linux PWM binding");rc=1;}
  }
+ if(servo_pins_release(&pins)){fprintf(stderr,"RESTORE FAILED: V1.1 pads/I2C0\n");rc=1;}
+ else if(leased)puts("RESTORE: PWM0/PWM1 registers/clocks, V1.1 pads and driver bindings restored");
  if(allocated&&release(phys,mem)){fprintf(stderr,"CMM free failed\n");rc=1;}
  if(initialized&&deinit()){fprintf(stderr,"SYS deinit failed\n");rc=1;}
  if(lib)dlclose(lib);
  if(reg!=MAP_FAILED)munmap((void*)reg,4096);
- if(pad!=MAP_FAILED)munmap((void*)pad,4096);
  if(periph!=MAP_FAILED)munmap((void*)periph,4096);
- if(pwm!=MAP_FAILED)munmap((void*)pwm,4096);
+ if(pwm!=MAP_FAILED)munmap((void*)pwm,SERVO_PWM_MAP_BYTES);
  if(fd>=0)close(fd);
  if(lockfd>=0)close(lockfd);
  if(bench||hold)printf("BENCH_END,%d\n",rc);

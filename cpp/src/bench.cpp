@@ -2,17 +2,22 @@
 #include <memory>
 #ifdef SERVO_MAIXCDK
 #include "maix_pwm.hpp"
-#include "maix_pinmap.hpp"
 #include "maix_sys.hpp"
+#include "../../tools/servo_v11_pins.h"
 #endif
 struct Hardware{
 #ifdef SERVO_MAIXCDK
  std::map<int,std::unique_ptr<maix::peripheral::pwm::PWM>> devices;
- std::map<std::string,std::string> old;
- void init(const Json&x,int hz){using namespace maix::peripheral;std::string pin=x.at("pin");int id=x.at("servo"),p=x.at("pwm");old[pin]=pinmap::get_pin_function(pin);require(int(pinmap::set_pin_function(pin,"PWM"+std::to_string(p)))==0,"pinmux failed");devices[id]=std::make_unique<pwm::PWM>(p,hz,0,false);}
+ servo_pin_lease pins;bool prepared=false;
+ Hardware(){servo_pins_init(&pins);}
+ void init(const Json&x,int hz){using namespace maix::peripheral;int id=x.at("servo"),p=x.at("pwm");
+  if(!prepared){require(servo_pwm_groups_idle(),"PWM0/PWM1 not idle");require(servo_pins_acquire(&pins)==0,"V1.1 servo pin lease failed");prepared=true;}
+  devices[id]=std::make_unique<pwm::PWM>(p,hz,0,false);
+  require(servo_pins_mux(&pins,unsigned(id-1))==0,"V1.1 pinmux failed");
+ }
  void set(int id,double us){require(devices.at(id)->duty_val(int(std::llround(us*1000)))>=0,"PWM write failed");}
  void enable(int id){require(int(devices.at(id)->enable())==0,"PWM enable failed");}
- ~Hardware(){for(auto&x:devices)try{if(int(x.second->disable())!=0)std::cerr<<"DISABLE FAILED "<<x.first<<'\n';}catch(...){std::cerr<<"DISABLE exception\n";}devices.clear();for(auto&x:old)try{if(int(maix::peripheral::pinmap::set_pin_function(x.first,x.second))!=0)std::cerr<<"RESTORE FAILED "<<x.first<<'\n';}catch(...){std::cerr<<"RESTORE exception\n";}}
+ ~Hardware(){for(auto&x:devices)try{if(int(x.second->disable())!=0)std::cerr<<"DISABLE FAILED "<<x.first<<'\n';}catch(...){std::cerr<<"DISABLE exception\n";}devices.clear();if(servo_pins_release(&pins))std::cerr<<"RESTORE FAILED: V1.1 pads/I2C0\n";}
 #else
  void init(const Json&,int){throw std::runtime_error("Build with MaixCDK for --run");}void set(int,double){}void enable(int){}
 #endif

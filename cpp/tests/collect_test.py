@@ -16,6 +16,15 @@ with tempfile.TemporaryDirectory() as tmp:
  assert len(rows)==8 and meta['complete'] and meta['sequence_gaps']==0
  assert [r['servo'] for r in rows[:4]]==['1','2','3','4']
  assert rows[0]['submit_monotonic_ns']=='1000000' and rows[4]['e907_snapshot_tick']=='5'
+ assert [r['pwm'] for r in rows[:4]]==['4','5','6','7'] and meta['carrier_revision']=='V1'
+ rows,meta=collect('BENCH_META,carrier,V1.1\nBENCH_CMD,2,15,1500,333,1,2,3,0\nBENCH_END,0\n')
+ assert [r['pwm'] for r in rows]==['7','6','1','0'] and meta['complete'] and meta['carrier_revision']=='V1.1'
+ rows,meta=collect('SERVO_META,carrier,V1.1\nSERVO,1,4,0,1500,333,1,2,0\nSERVO_END,done\n')
+ assert rows[0]['pwm']=='0' and meta['complete']
+ rows,meta=collect('SERVO_META,carrier,V1.1\nSERVO,1,1,4,1500,333,1,2,0\nSERVO_END,done\n',1)
+ assert not rows and not meta['complete']
+ rows,meta=collect('BENCH_META,carrier,unknown\nBENCH_END,0\n',1)
+ assert not meta['complete']
  rows,meta=collect('BENCH mask=0xf pulse_us=1600 (all selected outputs verified)\nPASS: check\n')
  assert len(rows)==4 and not meta['complete']
  rows,meta=collect('SERVO_META,tick_hz,1000\nSERVO,2,1,4,1522,333,10,11,0\nSERVO_END,done\n')

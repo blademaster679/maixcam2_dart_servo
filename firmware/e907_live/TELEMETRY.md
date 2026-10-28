@@ -1,5 +1,7 @@
 # E907 测试日志与 CSV 采集
 
+V1.1 日志新增 `BENCH_META,carrier,V1.1`（裸机）或 `SERVO_META,carrier,V1.1`（RT-Thread）。采集器按该字段将舵机 1/2/3/4 映射为 PWM7/6/1/0；无板型字段的历史日志默认 V1，并在 metadata.json 中注明。板型记录必须位于首条命令前，不能截掉后再按默认映射转换。
+
 ## 新记录（本次修复后）
 
 ```text
