@@ -3,12 +3,12 @@ template<class F>void rejects(F f){bool threw=false;try{f();}catch(...){threw=tr
 int main(int argc,char**argv){try{
  require(argc==2,"Provide config.json");auto c=Json::parse(read_file(argv[1]));auto steps=plan(c);require(steps.size()==108&&steps.back().pulse==1500,"Plan mismatch");for(auto&s:steps)require(s.pulse>=1445&&s.pulse<=1555,"Bounds mismatch");
  auto bad=c;bad["offsets_us"]={101};rejects([&]{validate(bad);});bad=c;bad["channels"][1]=bad["channels"][0];rejects([&]{validate(bad);});bad=c;bad["hold_s"]=-1;rejects([&]{validate(bad);});
- const int expected_pwm[4]={7,6,1,0},expected_h2[4]={12,15,9,6};
+ const int expected_pwm[4]={7,6,1,0},expected_h2[4]={6,3,9,12};
  const char *expected_pin[4]={"A31","A30","A25","A24"};
  for(int i=0;i<4;++i){require(c["channels"][i]["pwm"]==expected_pwm[i]&&c["channels"][i]["pin"]==expected_pin[i]&&c["channels"][i]["connector_signal_pin"]==expected_h2[i],"V1.1 schematic mapping mismatch");}
  bad=c;bad["carrier_revision"]="V1";rejects([&]{validate(bad);});
  bad=c;bad["channels"][0]["pin"]="B2";bad["channels"][0]["pwm"]=4;rejects([&]{validate(bad);});
- bad=c;bad["channels"][0]["connector_signal_pin"]=6;rejects([&]{validate(bad);});
+ bad=c;bad["channels"][0]["connector_signal_pin"]=12;rejects([&]{validate(bad);});
  std::vector<long long> v;require(telemetry("msh> SERVO,2,1,4,1522,333,10,11,0\r",v)&&v[3]==1522,"Telemetry mismatch");require(!telemetry("noise",v),"Noise accepted");require(!telemetry("SERVO,2,1,4,1522,333,10,11,0junk",v),"Malformed tail accepted");rejects([&]{telemetry("SERVO,1,1,8,1500,333,1,1,0",v);});
  require(telemetry("SERVO,2,4,0,1522,333,10,11,0",v,"V1.1"),"V1.1 telemetry mismatch");
  rejects([&]{telemetry("SERVO,2,1,4,1522,333,10,11,0",v,"V1.1");});

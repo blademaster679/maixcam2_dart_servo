@@ -4,12 +4,10 @@
  * transitions on a scope before using this for response-time identification.
  */
 #include "servo_board.h"
-int servo_pwm_set_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us)
+static int servo_pwm_write_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us)
 {
     uint32_t base, ch, cycle, high;
     int rc;
-    if (!servo_pwm_allowed((unsigned)pwm) || (hz != 50 && hz != 333)
-        || pulse_us < 1400 || pulse_us > 1600) return -1;
     if (!(pwm_status[pwm / 4].channel_status & (1U << (pwm % 4)))) return -2;
     cycle = PWM_CLK_SEL_FREQ_HZ / hz;
     high = (PWM_CLK_SEL_FREQ_HZ / 1000000U) * pulse_us;
@@ -26,4 +24,20 @@ int servo_pwm_set_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us)
     ax_writel(high, base + PWM_LOADCOUNT2_OFF(ch));
     ax_writel(PWM_MODE, base + PWM_CONTROLREG_OFF(ch));
     return pwm_start(pwm);
+}
+int servo_pwm_set_us(pwm_e pwm, uint32_t hz, uint32_t pulse_us)
+{
+    if (!servo_pwm_allowed((unsigned)pwm) || (hz != 50 && hz != 333)
+        || pulse_us < 1400 || pulse_us > 1600) return -1;
+    return servo_pwm_write_us(pwm, hz, pulse_us);
+}
+static inline int servo_pwm_set_port0_cal_us(uint32_t pulse_us)
+{
+    if (pulse_us < SERVO_PORT0_NEUTRAL_US || pulse_us > SERVO_PORT0_PLUS45_US) return -1;
+    return servo_pwm_write_us(pwm_00, 333, pulse_us);
+}
+static inline int servo_pwm_set_sweep_us(unsigned i,uint32_t pulse_us)
+{
+    if (!servo_sweep_pulse_valid(i,pulse_us)) return -1;
+    return servo_pwm_write_us((pwm_e)servo_channels[i].pwm,333,pulse_us);
 }

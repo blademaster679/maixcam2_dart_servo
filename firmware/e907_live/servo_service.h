@@ -17,9 +17,18 @@ static int servo_service_step(volatile uint32_t *m,uint32_t now,servo_service_st
     uint32_t seq=m[5];if(seq==m[6])return 0;fence();
     uint32_t cmd=m[4],mask=m[12];int result=0;
     if(cmd==1)result=(int)~m[7];
-    else if(cmd==2){
+    else if(cmd==2||cmd==SERVO_PORT0_CAL_CMD||cmd==SERVO_SWEEP_CMD){
         if(m[34]!=SERVO_LEASE_MAGIC||!mask||(mask&~15U))result=-20;
-        for(unsigned i=0;i<4;++i)if((mask&(1U<<i))&&(m[13+i]<1400||m[13+i]>1600))result=-21;
+        if(cmd==SERVO_PORT0_CAL_CMD){
+            if(mask!=8U||(state->active&~8U))result=-20;
+            if(m[16]<SERVO_PORT0_NEUTRAL_US||m[16]>SERVO_PORT0_PLUS45_US)result=-21;
+        }else if(cmd==SERVO_SWEEP_CMD){
+            if(mask!=15U)result=-20;
+            for(unsigned i=0;i<4;++i)
+                if(!servo_sweep_pulse_valid(i,m[13+i]))result=-21;
+        }else{
+            for(unsigned i=0;i<4;++i)if((mask&(1U<<i))&&(m[13+i]<1400||m[13+i]>1600))result=-21;
+        }
         if(!result){
             if(!state->initialized){
                 ax_writel(1U<<31,0x048700c0);
@@ -32,7 +41,9 @@ static int servo_service_step(volatile uint32_t *m,uint32_t now,servo_service_st
                 pwm_status[0].channel_status=3;pwm_status[1].channel_status=12;state->initialized=1;
             }
             for(unsigned i=0;i<4;++i)if(mask&(1U<<i)){
-                int r=servo_pwm_set_us((pwm_e)servo_channels[i].pwm,333,m[13+i]);if(r)result=r;
+                int r=cmd==SERVO_SWEEP_CMD?servo_pwm_set_sweep_us(i,m[13+i]):
+                    cmd==SERVO_PORT0_CAL_CMD?servo_pwm_set_port0_cal_us(m[16]):
+                    servo_pwm_set_us((pwm_e)servo_channels[i].pwm,333,m[13+i]);if(r)result=r;
             }
             if(result){stop_all();state->active=0;m[18]=3;}
             else{state->active|=mask;state->last=now;m[18]=1;}

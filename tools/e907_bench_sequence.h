@@ -64,4 +64,36 @@ static inline int e907_bench_run(const struct e907_bench_io *io, unsigned mask, 
 {
     return e907_bench_run_mode(io, mask, cycles, 0);
 }
+
+/* PCB ports 0, 1, 7, 6. Identify a fresh set using a generic pulse reference.
+ * Ten seconds per port, two seconds of disabled output between ports. */
+static inline int e907_identify_ports_run(const struct e907_bench_io *io)
+{
+    static const unsigned masks[] = {8, 4, 1, 2};
+    static const unsigned pulses[] = {1500, 1550, 1500, 1450, 1500,
+                                      1550, 1500, 1450, 1500};
+    for (unsigned port = 0; port < 4; ++port) {
+        if (io->stop(io->ctx)) return -1;
+        if (io->cycle_begin) io->cycle_begin(io->ctx, port + 1, 4);
+        for (unsigned step = 0; step < sizeof(pulses) / sizeof(pulses[0]); ++step) {
+            uint64_t end = io->now_ms(io->ctx) + (step == 0 ? 2000 : 1000);
+            do {
+                if (io->set(io->ctx, masks[port], pulses[step])) goto failed;
+                uint64_t now = io->now_ms(io->ctx);
+                if (now >= end) break;
+                unsigned wait = end - now > 100 ? 100 : (unsigned)(end - now);
+                if (io->wait_ms(io->ctx, wait)) goto failed;
+            } while (io->now_ms(io->ctx) < end);
+        }
+        if (io->stop(io->ctx)) return -1;
+        if (port < 3) {
+            for (unsigned tick = 0; tick < 20; ++tick)
+                if (io->wait_ms(io->ctx, 100)) return -1;
+        }
+    }
+    return 0;
+failed:
+    (void)io->stop(io->ctx);
+    return -1;
+}
 #endif

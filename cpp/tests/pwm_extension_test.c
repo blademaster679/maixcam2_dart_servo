@@ -24,5 +24,8 @@ int main(void){unsigned before;const unsigned targets[]={7,6,1,0};
  stop_fail=1;before=writes;CHECK(servo_pwm_set_us(pwm_00,333,1500)==-7);CHECK(writes==before);stop_fail=0;
  start_fail=1;CHECK(servo_pwm_set_us(pwm_00,333,1500)==-8);start_fail=0;
  before=starts;CHECK(!servo_pwm_set_us(pwm_00,333,1500));CHECK(starts==before+1);
+ before=writes;CHECK(servo_pwm_set_port0_cal_us(1579)==-1);CHECK(servo_pwm_set_port0_cal_us(1956)==-1);CHECK(writes==before);
+ CHECK(!servo_pwm_set_port0_cal_us(1955));CHECK(ax_readl(PWM_LOADCOUNT2_OFF(0))==46920);CHECK(ax_readl(PWM_LOADCOUNT_OFF(0))==25152);
+ before=writes;CHECK(servo_pwm_set_us(pwm_00,333,1955)==-1);CHECK(servo_pwm_set_us(pwm_01,333,1955)==-1);CHECK(writes==before);
  puts("PASS: V1.1 PWM0/1/6/7, reject PWM2..5, pulse arithmetic and stop/start errors");return 0;
 }

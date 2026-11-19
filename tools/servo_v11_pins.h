@@ -1,6 +1,9 @@
 #ifndef SERVO_V11_PINS_H
 #define SERVO_V11_PINS_H
-/* Linux pin lease shared by the A53/MaixCDK and E907 loader paths.
+/* Linux resource checks shared by the A53/MaixCDK and E907 loader paths.
+ * Release I2C0, then let the caller directly select the PWM pad function.
+ * GPIO queries are read-only: do not request lines or change their direction.
+ * The advisory lock coordinates our tools, not unrelated GPIO users.
  * PWM ownership must be checked separately before acquiring these pins. */
 #include "../firmware/servo_board.h"
 #include <dirent.h>
@@ -18,12 +21,12 @@
 #include <unistd.h>
 
 typedef struct {
-    int fd,lock,gpio,detached,saved;
+    int fd,lock,detached,saved;
     volatile uint32_t *pad;
     uint32_t old_pad[4];
     char i2c_driver[PATH_MAX];
 } servo_pin_lease;
-static inline void servo_pins_init(servo_pin_lease *p){memset(p,0,sizeof(*p));p->fd=p->lock=p->gpio=-1;}
+static inline void servo_pins_init(servo_pin_lease *p){memset(p,0,sizeof(*p));p->fd=p->lock=-1;}
 static inline int servo_sysfs_action(const char *driver,const char *action,const char *device){
     char path[PATH_MAX];
     if(snprintf(path,sizeof(path),"%s/%s",driver,action)>=(int)sizeof(path))return -1;
@@ -74,7 +77,6 @@ static inline int servo_pin_clients_idle(void){
 }
 static inline int servo_pins_release(servo_pin_lease *p){
     int rc=0;
-    if(p->gpio>=0){close(p->gpio);p->gpio=-1;}
     if(p->saved){
         for(unsigned i=0;i<4;++i){unsigned offset=(servo_channels[i].pad-0x02304000U)/4;
             p->pad[offset]=p->old_pad[i];__sync_synchronize();
@@ -91,6 +93,19 @@ static inline int servo_pins_release(servo_pin_lease *p){
     if(p->lock>=0){close(p->lock);p->lock=-1;}
     return rc;
 }
+static inline int servo_gpio_line_idle(const struct gpioline_info *before,
+                                      const struct gpioline_info *now,int detached){
+    if(now->flags&GPIOLINE_FLAG_KERNEL)return 0;
+    if(!(now->flags&GPIOLINE_FLAG_IS_OUT))return 1;
+    /* DesignWare releases its recovery GPIOs on unbind but leaves SCL's
+     * direction as output. Accept that residual state only when this lease
+     * observed the I2C owner and detached it. Preserve the GPIO direction;
+     * the caller selects the PWM peripheral through the pad mux. */
+    const char *owner=now->line_offset==24?"scl":now->line_offset==25?"sda":NULL;
+    return detached&&owner&&before->line_offset==now->line_offset&&
+           (before->flags&GPIOLINE_FLAG_KERNEL)&&!strcmp(before->consumer,owner)&&
+           !now->consumer[0];
+}
 static inline int servo_pins_acquire(servo_pin_lease *p){
     if(geteuid()!=0){fprintf(stderr,"V1.1 pin lease requires root\n");return -1;}
     p->lock=open("/run/lock/maixcam2-servo-v11.lock",O_CREAT|O_RDWR|O_CLOEXEC|O_NOFOLLOW,0600);
@@ -102,23 +117,28 @@ static inline int servo_pins_acquire(servo_pin_lease *p){
     p->pad=(volatile uint32_t*)map;
     for(unsigned i=0;i<4;++i)p->old_pad[i]=p->pad[(servo_channels[i].pad-0x02304000U)/4];
     p->saved=1;
-    const char *driver="/sys/bus/platform/devices/4850000.i2c/driver";
-    if(access(driver,F_OK)==0){
-        if(!realpath(driver,p->i2c_driver)||servo_sysfs_action(p->i2c_driver,"unbind","4850000.i2c"))return -1;
-        p->detached=1;
-    }
     int chip=open("/dev/gpiochip0",O_RDONLY|O_CLOEXEC);if(chip<0)return -1;
     struct gpiochip_info info;memset(&info,0,sizeof(info));
     if(ioctl(chip,GPIO_GET_CHIPINFO_IOCTL,&info)||strcmp(info.label,"4800000.gpio")){close(chip);return -1;}
-    struct gpiohandle_request request;memset(&request,0,sizeof(request));
-    request.flags=GPIOHANDLE_REQUEST_INPUT;request.lines=4;strcpy(request.consumer_label,"servo-v11");
+    struct gpioline_info before[4];memset(before,0,sizeof(before));
+    for(unsigned i=0;i<4;++i){
+        before[i].line_offset=servo_channels[i].gpio;
+        if(ioctl(chip,GPIO_GET_LINEINFO_IOCTL,&before[i])){perror("GPIO before I2C0 release");close(chip);return -1;}
+    }
+    const char *driver="/sys/bus/platform/devices/4850000.i2c/driver";
+    if(access(driver,F_OK)==0){
+        if(!realpath(driver,p->i2c_driver)||servo_sysfs_action(p->i2c_driver,"unbind","4850000.i2c")){perror("release I2C0");close(chip);return -1;}
+        p->detached=1;
+    }
     for(unsigned i=0;i<4;++i){
         struct gpioline_info line;memset(&line,0,sizeof(line));line.line_offset=servo_channels[i].gpio;
-        if(ioctl(chip,GPIO_GET_LINEINFO_IOCTL,&line)||(line.flags&(GPIOLINE_FLAG_KERNEL|GPIOLINE_FLAG_IS_OUT))){close(chip);return -1;}
-        request.lineoffsets[i]=servo_channels[i].gpio;
+        if(ioctl(chip,GPIO_GET_LINEINFO_IOCTL,&line)){perror("GPIO after I2C0 release");close(chip);return -1;}
+        if(!servo_gpio_line_idle(&before[i],&line,p->detached)){
+            fprintf(stderr,"REFUSED: GPIO A%u flags=0x%x consumer=%s\n",line.line_offset,line.flags,line.consumer);
+            close(chip);return -1;
+        }
     }
-    if(ioctl(chip,GPIO_GET_LINEHANDLE_IOCTL,&request)){close(chip);return -1;}
-    close(chip);p->gpio=request.fd;return 0;
+    close(chip);return 0;
 }
 static inline int servo_pins_mux(servo_pin_lease *p,unsigned i){
     if(!p->saved||i>=4)return -1;

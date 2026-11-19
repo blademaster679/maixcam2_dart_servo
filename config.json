@@ -23,7 +23,7 @@
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
-      "connector_signal_pin": 12
+      "connector_signal_pin": 6
     },
     {
       "servo": 2,
@@ -32,7 +32,7 @@
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
-      "connector_signal_pin": 15
+      "connector_signal_pin": 3
     },
     {
       "servo": 3,
@@ -50,7 +50,7 @@
       "center_us": 1500,
       "min_us": 1400,
       "max_us": 1600,
-      "connector_signal_pin": 6
+      "connector_signal_pin": 12
     }
   ],
   "carrier_revision": "V1.1",

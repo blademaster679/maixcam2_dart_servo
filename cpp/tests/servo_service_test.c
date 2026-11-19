@@ -58,6 +58,43 @@ int main(void){
         for(unsigned j=0;j<4;++j)CHECK((m[20+3*j]&1)==(i==j));
     }
     request(m,&state,3,0,101,0);
+    /* Extended range is an explicit PWM0-only command; ordinary ABI stays narrow. */
+    unsigned saved_writes=writes;
+    m[16]=1580;request(m,&state,SERVO_PORT0_CAL_CMD,4,102,-20);CHECK(writes==saved_writes);
+    m[16]=1579;request(m,&state,SERVO_PORT0_CAL_CMD,8,103,-21);CHECK(writes==saved_writes);
+    m[16]=1956;request(m,&state,SERVO_PORT0_CAL_CMD,8,104,-21);CHECK(writes==saved_writes);
+    m[16]=1955;request(m,&state,2,8,105,-21);CHECK(writes==saved_writes);
+    request(m,&state,SERVO_PORT0_CAL_CMD,8,106,0);
+    CHECK(m[17]==8&&m[31]==46920&&m[30]==25152);
+    for(unsigned j=0;j<4;++j)CHECK((m[20+3*j]&1)==(j==3));
+    saved_writes=writes;
+    request(m,&state,SERVO_PORT0_CAL_CMD,15,107,-20);CHECK(writes==saved_writes);
+    servo_service_step(m,106+24000000U,&state);CHECK(m[17]==0&&m[32]==2);
+    request(m,&state,3,0,108,0);m[13]=1500;request(m,&state,2,1,108,0);
+    saved_writes=writes;request(m,&state,SERVO_PORT0_CAL_CMD,8,109,-20);CHECK(writes==saved_writes);
+    request(m,&state,3,0,110,0);
+    /* Validate the entire vector before touching hardware, including the last
+     * channel: a malformed request must not partially move the first three. */
+    for(unsigned i=0;i<4;++i)m[13+i]=servo_sweep_neutral_us[i];
+    saved_writes=writes;
+    request(m,&state,SERVO_SWEEP_CMD,8,111,-20);CHECK(writes==saved_writes);
+    m[34]=0;request(m,&state,SERVO_SWEEP_CMD,15,112,-20);CHECK(writes==saved_writes);
+    m[34]=SERVO_LEASE_MAGIC;
+    for(unsigned i=0;i<4;++i){
+        m[13+i]=servo_sweep_neutral_us[i]-376;
+        request(m,&state,SERVO_SWEEP_CMD,15,113,-21);CHECK(writes==saved_writes);
+        m[13+i]=servo_sweep_neutral_us[i]+376;
+        request(m,&state,SERVO_SWEEP_CMD,15,114,-21);CHECK(writes==saved_writes);
+        m[13+i]=servo_sweep_neutral_us[i];
+    }
+    for(int offset=-375;offset<=375;offset+=375){
+        for(unsigned i=0;i<4;++i)m[13+i]=(unsigned)((int)servo_sweep_neutral_us[i]+offset);
+        request(m,&state,SERVO_SWEEP_CMD,15,115,0);CHECK(m[17]==15);
+        for(unsigned i=0;i<4;++i)CHECK(m[20+3*i]==0x1f&&m[22+3*i]==24*m[13+i]&&m[21+3*i]+m[22+3*i]==72072);
+    }
+    saved_writes=writes;request(m,&state,SERVO_SWEEP_CMD,15,116,0);CHECK(writes==saved_writes);
+    servo_service_step(m,116+24000000U,&state);CHECK(m[17]==0&&m[32]==3);
+    for(unsigned i=0;i<4;++i)CHECK(!(m[20+3*i]&1));
     for(unsigned i=0;i<0x2000/4;++i)if(!owned_register(0x06060000+4*i))CHECK(registers[i]==0x5a5a5a5a);
-    puts("PASS: real E907 service, cross-group mapping, old ABI rejection, watchdog wrap, logical masks and untouched PWM2/3/4/5/BMI pins");
+    puts("PASS: E907 service, mapping, watchdog, PWM0-only extended range, ordinary limits and untouched unrelated registers");
 }

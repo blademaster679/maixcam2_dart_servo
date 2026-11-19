@@ -6,6 +6,7 @@ struct fake {
     uint64_t time,last_set;
     unsigned active,seen,calls,stops,fail_at,cancel_at;
     unsigned transitions[4],last_pulse[4];
+    unsigned order[4],selected_count,min_pulse,max_pulse;
 };
 static uint64_t now(void *p) { return ((struct fake *)p)->time; }
 static int wait_ms(void *p,unsigned ms) {
@@ -20,7 +21,13 @@ static int set(void *p,unsigned mask,unsigned us) {
     CHECK(!f->active || f->active==mask);
     if(f->active) CHECK(f->time-f->last_set<=101);
     if(++f->calls==f->fail_at) return -1;
-    if(!f->active) CHECK(us==1500);
+    if(!f->active) {
+        CHECK(us==1500);
+        if(f->selected_count<4) f->order[f->selected_count]=mask;
+        ++f->selected_count;
+    }
+    if(!f->min_pulse||us<f->min_pulse)f->min_pulse=us;
+    if(us>f->max_pulse)f->max_pulse=us;
     f->active=mask;f->seen|=f->active;f->last_set=f->time;
     for(unsigned ch=0;ch<4;ch++) if(mask&(1U<<ch))
     if(f->last_pulse[ch]!=us) { ++f->transitions[ch];f->last_pulse[ch]=us; }
@@ -86,6 +93,25 @@ int main(void) {
             CHECK(group.transitions[ch]==group.transitions[0]);
             CHECK(group.last_pulse[ch]==group.last_pulse[0]);
         }
+    }
+    /* A fresh set is identified in silk order with no old neutral offsets. */
+    for(unsigned scenario=0;scenario<3;++scenario) {
+        struct fake identify={0};
+        if(scenario==1)identify.fail_at=5;
+        if(scenario==2)identify.cancel_at=400;
+        struct e907_bench_io io={&identify,now,wait_ms,set,stop,NULL};
+        CHECK(e907_identify_ports_run(&io)==(scenario?-1:0));
+        CHECK(!identify.active);
+        if(!scenario) {
+            const unsigned expected[]={8,4,1,2};
+            CHECK(identify.selected_count==4&&identify.seen==15&&identify.stops==8);
+            CHECK(identify.time>=46000&&identify.time<=46036);
+            CHECK(identify.min_pulse==1450&&identify.max_pulse==1550);
+            for(unsigned i=0;i<4;++i) {
+                CHECK(identify.order[i]==expected[i]);
+                CHECK(identify.last_pulse[i]==1500);
+            }
+        }else CHECK(identify.selected_count==1&&identify.stops==2);
     }
     unsigned count=0;
     CHECK(e907_bench_parse_cycles("1",&count)==0 && count==1);
