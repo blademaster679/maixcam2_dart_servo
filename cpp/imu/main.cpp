@@ -17,6 +17,7 @@ struct Stream {
   std::ofstream file;
   uint64_t count = 0, invalid = 0, saturated = 0, changes = 0, previous_ns = 0;
   double max_gap_ms = 0, min_norm = 1e99, max_norm = 0;
+  double last_temperature_c = 0;
   std::array<double, 7> mean{}, m2{};
   std::array<int16_t, 6> previous{};
   GyroBias bias;
@@ -43,6 +44,7 @@ struct Stream {
     if (previous_ns)
       max_gap_ms = std::max(max_gap_ms, (end - previous_ns) / 1e6);
     previous_ns = end;
+    last_temperature_c = sample.temperature;
     double norm = std::sqrt(sample.values[0] * sample.values[0] +
                             sample.values[1] * sample.values[1] +
                             sample.values[2] * sample.values[2]);
@@ -116,7 +118,7 @@ int main(int argc, char **argv) {
       std::string arg = argv[i];
       if (arg == "--help") {
         std::cout << "V1.1 dual IMU: dual_imu --run|--probe --out "
-                     "NEW_DIRECTORY [--seconds 1..600]\n"
+                     "NEW_DIRECTORY [--seconds 1..3600]\n"
                      "  --calibrate --stationary-confirmed "
                      "[--calibration-seconds 10..600]\n"
                      "  --calibration FILE: load a fixed calibration from this "
@@ -172,8 +174,8 @@ int main(int argc, char **argv) {
           "new calibration requires at least 30 seconds warmup");
     check(calibration_seconds >= 10 && calibration_seconds <= 600,
           "calibration seconds must be 10..600");
-    check(std::isfinite(requested) && requested >= 1 && requested <= 600,
-          "seconds must be 1..600");
+    check(std::isfinite(requested) && requested >= 1 && requested <= 3600,
+          "seconds must be 1..3600");
     check(!stationary_confirmed || requested >= 10,
           "static validation needs at least 10 seconds");
     if (!calibration_path.empty()) {
@@ -260,6 +262,8 @@ int main(int argc, char **argv) {
         report["active_phase"] = phase;
         save(out / "summary.json", report);
         const auto start = monotonic_ns();
+        report["phase_start_monotonic_ns"][phase] = start;
+        save(out / "summary.json", report);
         auto health = start;
         while (!interrupted) {
           auto now = monotonic_ns();
@@ -290,7 +294,11 @@ int main(int argc, char **argv) {
                   "BMI lost initialization state");
             std::cout << phase << " t=" << int(duration)
                       << "s samples ICM=" << a.count << " BMI=" << b.count
+                      << " temp_c ICM=" << a.last_temperature_c
+                      << " BMI=" << b.last_temperature_c
                       << std::endl;
+            a.file.flush();
+            b.file.flush();
             health = now;
           }
           delay_us(250);

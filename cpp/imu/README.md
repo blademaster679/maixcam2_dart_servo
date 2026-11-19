@@ -44,9 +44,24 @@ ctest --test-dir /tmp/servo-build --output-on-failure
 # 仅验证两颗身份寄存器，各连续读取 100 次
 sudo ./build_dual_imu/dual_imu --probe --out runs/imu_probe_01
 
-# 同时采集 60 秒，允许范围 1–600 秒
+# 同时采集 60 秒，允许范围 1–3600 秒
 sudo ./build_dual_imu/dual_imu --run --seconds 60 --out runs/dual_imu_01
 ```
+
+## 20 分钟自然温漂记录
+
+保持板卡静止并记录供电、风扇及上电状态，连续采集原始数据：
+
+```sh
+sudo ./build_dual_imu/dual_imu --run --seconds 1200 --warmup-seconds 0 --out runs/thermal01
+```
+
+这类温漂记录不加载旧 `--calibration`，也不启用面向短时稳定标定的
+`--stationary-confirmed` 验收：自然温度变化正是观察对象，不应被 2°C 温度跨度
+或 3°C 标定温差限制中断。操作者的静止确认应另存入测试记录，随后独立检查运动。
+CSV 每秒刷新一次，日志输出累计样本数与两颗温度，摘要保存各阶段主机单调时钟起点。
+原始数据不在线去均值；加速度包含重力，单一静止姿态不能分离三轴零偏与重力投影。
+完整记录口径、离线分析命令及融合方案见 [THERMAL_TEST.md](THERMAL_TEST.md)。
 
 ## 静止陀螺仪零偏标定与补偿
 
