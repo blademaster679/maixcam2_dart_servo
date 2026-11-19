@@ -1,0 +1,139 @@
+{
+  "carrier": "V1.1",
+  "view_reference": "以用户确认舵机位置时提供的底板三维视图的观察方向为准",
+  "frequency_hz": 333,
+  "ports": {
+    "0": {
+      "position": "左上角",
+      "neutral_us": 1580,
+      "offset_from_1500_us": 80,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-13",
+      "angle_calibration": {
+        "reference_pulse_us": 1580,
+        "observed_point": {
+          "pulse_us": 2080,
+          "deflection_deg": 60,
+          "source": "user_measurement"
+        },
+        "estimated_positive_45_pulse_us": 1955,
+        "method": "Linear interpolation: 1580 + (2080 - 1580) * 45 / 60",
+        "estimated_target_verified": true,
+        "verified_positive_45_point": {
+          "pulse_us": 1955,
+          "deflection_deg": 45,
+          "source": "user_measurement",
+          "confirmed_date": "2026-11-13"
+        },
+        "estimated_positive_30_point": {
+          "pulse_us": 1830,
+          "deflection_deg": 30,
+          "method": "1580 + (1955 - 1580) * 30 / 45",
+          "verified": true,
+          "source": "user_measurement",
+          "confirmed_date": "2026-11-13"
+        },
+        "positive_direction_model": {
+          "reference_pulse_us": 1580,
+          "microseconds_per_degree_numerator": 25,
+          "microseconds_per_degree_denominator": 3,
+          "formula": "pulse_us = round(1580 + angle_deg * 25 / 3)",
+          "range_deg": [
+            0,
+            60
+          ],
+          "scope": "仅适用于当前安装及用户测量基准下的0口增加脉宽方向；未验证反向或其他舵机",
+          "table": [
+            {
+              "angle_deg": 0,
+              "pulse_us": 1580,
+              "basis": "user_confirmed_neutral"
+            },
+            {
+              "angle_deg": 5,
+              "pulse_us": 1622,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 10,
+              "pulse_us": 1663,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 15,
+              "pulse_us": 1705,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 20,
+              "pulse_us": 1747,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 25,
+              "pulse_us": 1788,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 30,
+              "pulse_us": 1830,
+              "basis": "user_measured"
+            },
+            {
+              "angle_deg": 35,
+              "pulse_us": 1872,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 40,
+              "pulse_us": 1913,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 45,
+              "pulse_us": 1955,
+              "basis": "user_measured"
+            },
+            {
+              "angle_deg": 50,
+              "pulse_us": 1997,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 55,
+              "pulse_us": 2038,
+              "basis": "linear_interpolation"
+            },
+            {
+              "angle_deg": 60,
+              "pulse_us": 2080,
+              "basis": "user_measured"
+            }
+          ]
+        }
+      }
+    },
+    "6": {
+      "position": "右上角",
+      "neutral_us": 1520,
+      "offset_from_1500_us": 20,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-13"
+    },
+    "7": {
+      "position": "左下角",
+      "neutral_us": 1580,
+      "offset_from_1500_us": 80,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-13"
+    },
+    "1": {
+      "position": "右下角",
+      "neutral_us": 1450,
+      "offset_from_1500_us": -50,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-13"
+    }
+  },
+  "note": "校准记录；null 表示尚未确认。现有测试程序不会自动读取此文件。"
+}

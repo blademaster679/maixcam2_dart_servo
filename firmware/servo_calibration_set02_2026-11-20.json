@@ -1,0 +1,88 @@
+{
+  "calibration_set": "set02_2026-11-20",
+  "carrier": "V1.1",
+  "created_date": "2026-11-20",
+  "servo_model": null,
+  "view_reference": "以用户在2026-11-20提供的黑色十字组件照片朝向为准，四路位置已由用户确认",
+  "frequency_hz": 333,
+  "ports": {
+    "0": {
+      "logical_servo": 4,
+      "pwm": 0,
+      "soc_pin": "A24",
+      "h2_signal_pin": 12,
+      "position": "左上角",
+      "neutral_us": 1440,
+      "offset_from_1500_us": -60,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-20",
+      "angle_calibration": null,
+      "position_confirmed_by": "user",
+      "position_confirmed_date": "2026-11-20"
+    },
+    "1": {
+      "logical_servo": 3,
+      "pwm": 1,
+      "soc_pin": "A25",
+      "h2_signal_pin": 9,
+      "position": "左下角",
+      "neutral_us": 1525,
+      "offset_from_1500_us": 25,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-20",
+      "angle_calibration": null,
+      "position_confirmed_by": "user",
+      "position_confirmed_date": "2026-11-20"
+    },
+    "7": {
+      "logical_servo": 1,
+      "pwm": 7,
+      "soc_pin": "A31",
+      "h2_signal_pin": 6,
+      "position": "右下角",
+      "neutral_us": 1570,
+      "offset_from_1500_us": 70,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-20",
+      "angle_calibration": null,
+      "position_confirmed_by": "user",
+      "position_confirmed_date": "2026-11-20"
+    },
+    "6": {
+      "logical_servo": 2,
+      "pwm": 6,
+      "soc_pin": "A30",
+      "h2_signal_pin": 3,
+      "position": "右上角",
+      "neutral_us": 1515,
+      "offset_from_1500_us": 15,
+      "confirmed_by": "user",
+      "confirmed_date": "2026-11-20",
+      "angle_calibration": null,
+      "position_confirmed_by": "user",
+      "position_confirmed_date": "2026-11-20"
+    }
+  },
+  "identification_test": {
+    "pcb_port_order": [
+      0,
+      1,
+      7,
+      6
+    ],
+    "reference_pulse_us": 1500,
+    "pulse_range_us": [
+      1450,
+      1550
+    ],
+    "frequency_hz": 333,
+    "command": "./e907_live_probe --identify-ports e907_servo.bin",
+    "elapsed_seconds": 46.05225343899997,
+    "software_status": "PASS",
+    "physical_mapping_status": "user_confirmed_all_four",
+    "board_ip": "192.168.137.253",
+    "board_hostname": "maixcam2-e1fa",
+    "remote_run_directory": "/root/servo-set02-identify-20261120/run-t8kjtfmr"
+  },
+  "note": "第二批四个舵机的独立校准记录。null 表示尚未确认；1500 us 仅作识别动作的参考值。"
+}
