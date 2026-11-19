@@ -1,0 +1,37 @@
+{
+  "carrier_revision": "V1.1",
+  "connector": "FPC2",
+  "camera_i2c": 7,
+  "hostname": "maixcam2-e1fa",
+  "status": "PASS",
+  "pins_restored": true,
+  "library_sha256": "8ae5bad9d4dca197b5c6966693fa1c779d801c4092abd93316e3a3e2d973cd93",
+  "capture_sha256": "ea52de8714ad5c90dd2c85b0370b97d90954aae1f8fc5cac848af73b8a773347",
+  "pads_before": {
+    "A8": 131,
+    "A9": 131
+  },
+  "exit_code": 0,
+  "pads_after_capture": {
+    "A8": 196739,
+    "A9": 196739
+  },
+  "i2c_read_write_errors": 0,
+  "i2c_routed_opens": 6,
+  "mux_reapplications": 2,
+  "width": 640,
+  "height": 480,
+  "format": "RGB888",
+  "requested_fps": 30,
+  "warmup_frames": 15,
+  "valid_frames": 90,
+  "measured_fps": 30.28,
+  "distinct_sampled_frames": 90,
+  "nonuniform_sampled_frames": 90,
+  "elapsed_seconds": 5.1489752520001275,
+  "client_date": "2026-11-20",
+  "client_timezone": "Asia/Shanghai",
+  "board_ip": "192.168.137.253",
+  "maixpy_version": "4.12.5",
+  "command": "python3 run_camera_v11.py --out /tmp/camera-v11-package-run01"
+}

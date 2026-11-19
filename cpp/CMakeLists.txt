@@ -54,6 +54,8 @@ foreach(test firmware pwm_extension e907_bench servo_service servo_scope servo_p
 endforeach()
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_test(NAME camera_v11_runner COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/camera_v11_runner_test.py)
   add_test(NAME servo_scope_runner COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/servo_scope_runner_test.py ${CMAKE_CURRENT_SOURCE_DIR}/..)
 endif()
