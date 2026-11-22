@@ -5,10 +5,10 @@
   "ports": {
     "0": {
       "position": "左上角",
-      "neutral_us": 1580,
-      "offset_from_1500_us": 80,
+      "neutral_us": 1530,
+      "offset_from_1500_us": 30,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-13",
+      "confirmed_date": "2026-11-22",
       "angle_calibration": {
         "reference_pulse_us": 1580,
         "observed_point": {
@@ -110,15 +110,34 @@
               "basis": "user_measured"
             }
           ]
+        },
+        "valid_for_current_neutral": false,
+        "requires_revalidation": true,
+        "note": "历史角度实测以 1580 µs 中位为基准；2026-11-22 中位更新为 1530 µs，原角度对应值保留为历史数据，当前安装需重新验证角度与脉宽关系。"
+      },
+      "neutral_history": [
+        {
+          "neutral_us": 1580,
+          "offset_from_1500_us": 80,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-13"
         }
-      }
+      ]
     },
     "6": {
       "position": "右上角",
-      "neutral_us": 1520,
-      "offset_from_1500_us": 20,
+      "neutral_us": 1450,
+      "offset_from_1500_us": -50,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-13"
+      "confirmed_date": "2026-11-22",
+      "neutral_history": [
+        {
+          "neutral_us": 1520,
+          "offset_from_1500_us": 20,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-13"
+        }
+      ]
     },
     "7": {
       "position": "左下角",
@@ -129,10 +148,18 @@
     },
     "1": {
       "position": "右下角",
-      "neutral_us": 1450,
-      "offset_from_1500_us": -50,
+      "neutral_us": 1570,
+      "offset_from_1500_us": 70,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-13"
+      "confirmed_date": "2026-11-22",
+      "neutral_history": [
+        {
+          "neutral_us": 1450,
+          "offset_from_1500_us": -50,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-13"
+        }
+      ]
     }
   },
   "note": "校准记录；null 表示尚未确认。现有测试程序不会自动读取此文件。"
