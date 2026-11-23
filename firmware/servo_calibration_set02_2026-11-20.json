@@ -12,13 +12,21 @@
       "soc_pin": "A24",
       "h2_signal_pin": 12,
       "position": "左上角",
-      "neutral_us": 1440,
-      "offset_from_1500_us": -60,
+      "neutral_us": 1520,
+      "offset_from_1500_us": 20,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-20",
+      "confirmed_date": "2026-11-24",
       "angle_calibration": null,
       "position_confirmed_by": "user",
-      "position_confirmed_date": "2026-11-20"
+      "position_confirmed_date": "2026-11-20",
+      "neutral_history": [
+        {
+          "neutral_us": 1440,
+          "offset_from_1500_us": -60,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-20"
+        }
+      ]
     },
     "1": {
       "logical_servo": 3,
@@ -26,13 +34,21 @@
       "soc_pin": "A25",
       "h2_signal_pin": 9,
       "position": "左下角",
-      "neutral_us": 1525,
-      "offset_from_1500_us": 25,
+      "neutral_us": 1440,
+      "offset_from_1500_us": -60,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-20",
+      "confirmed_date": "2026-11-24",
       "angle_calibration": null,
       "position_confirmed_by": "user",
-      "position_confirmed_date": "2026-11-20"
+      "position_confirmed_date": "2026-11-20",
+      "neutral_history": [
+        {
+          "neutral_us": 1525,
+          "offset_from_1500_us": 25,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-20"
+        }
+      ]
     },
     "7": {
       "logical_servo": 1,
@@ -40,13 +56,21 @@
       "soc_pin": "A31",
       "h2_signal_pin": 6,
       "position": "右下角",
-      "neutral_us": 1570,
-      "offset_from_1500_us": 70,
+      "neutral_us": 1440,
+      "offset_from_1500_us": -60,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-20",
+      "confirmed_date": "2026-11-24",
       "angle_calibration": null,
       "position_confirmed_by": "user",
-      "position_confirmed_date": "2026-11-20"
+      "position_confirmed_date": "2026-11-20",
+      "neutral_history": [
+        {
+          "neutral_us": 1570,
+          "offset_from_1500_us": 70,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-20"
+        }
+      ]
     },
     "6": {
       "logical_servo": 2,
@@ -54,13 +78,21 @@
       "soc_pin": "A30",
       "h2_signal_pin": 3,
       "position": "右上角",
-      "neutral_us": 1515,
-      "offset_from_1500_us": 15,
+      "neutral_us": 1570,
+      "offset_from_1500_us": 70,
       "confirmed_by": "user",
-      "confirmed_date": "2026-11-20",
+      "confirmed_date": "2026-11-24",
       "angle_calibration": null,
       "position_confirmed_by": "user",
-      "position_confirmed_date": "2026-11-20"
+      "position_confirmed_date": "2026-11-20",
+      "neutral_history": [
+        {
+          "neutral_us": 1515,
+          "offset_from_1500_us": 15,
+          "confirmed_by": "user",
+          "confirmed_date": "2026-11-20"
+        }
+      ]
     }
   },
   "identification_test": {

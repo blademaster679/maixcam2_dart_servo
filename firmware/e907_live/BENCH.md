@@ -15,10 +15,10 @@
 
 | 底板丝印 | 逻辑通道 | 第一批位置 | 第一批中位 / µs | 第二批位置 | 第二批中位 / µs |
 |---|---:|---|---:|---|---:|
-| 0 | 4 | 左上 | 1530 | 左上 | 1440 |
-| 1 | 3 | 右下 | 1570 | 左下 | 1525 |
-| 7 | 1 | 左下 | 1580 | 右下 | 1570 |
-| 6 | 2 | 右上 | 1450 | 右上 | 1515 |
+| 0 | 4 | 左上 | 1530 | 左上 | 1520 |
+| 1 | 3 | 右下 | 1570 | 左下 | 1440 |
+| 7 | 1 | 左下 | 1580 | 右下 | 1440 |
+| 6 | 2 | 右上 | 1450 | 右上 | 1570 |
 
 2026-11-22，第一批 0 口中位由 1580 µs 更新为 1530 µs，1 口由 1450 µs 更新为
 1570 µs，6 口由 1520 µs 更新为 1450 µs。使用现有板端程序归位，每次选择一条执行：
@@ -38,8 +38,30 @@
 ```sh
 ./e907_live_probe --identify-ports e907_servo.bin
 # 第二批 0 口固定在用户确认中位，Ctrl+C 结束
-./e907_live_probe --hold-servo 4 e907_servo.bin --pulse-us 1440
+./e907_live_probe --hold-servo 4 e907_servo.bin --pulse-us 1520
 ```
+
+2026-11-24，第二批四路中位更新为 0/1/7/6 口对应 1520/1440/1440/1570 µs，
+原值保留在各路 `neutral_history` 中。板端工具已恢复至 `/root/servo-tools`。
+以下每次选择一条执行；运行中的保持命令需结束后再用新脉宽启动：
+
+```sh
+cd /root/servo-tools
+./e907_live_probe --hold-servo 4 e907_servo.bin --pulse-us 1520
+./e907_live_probe --hold-servo 3 e907_servo.bin --pulse-us 1440
+./e907_live_probe --hold-servo 1 e907_servo.bin --pulse-us 1440
+./e907_live_probe --hold-servo 2 e907_servo.bin --pulse-us 1570
+```
+
+同日恢复工具后，`REFUSED: PWM0/PWM1 not idle` 的占用来源为系统
+`launcher.service`：背光通过 sysfs 请求并启用了 PWM0 控制器的第 3 通道，
+周期 100000 ns、占空时间 47500 ns。加载器需要独占 PWM0/PWM1 两个控制器，
+因此即使舵机对应通道未启用，也会拒绝运行。
+
+板端已按无需系统显示服务的设置停止并禁用 `launcher.service`，禁用并取消导出该背光通道。
+检查确认服务为 `inactive/disabled`、PWM0/PWM1 均无 requested/enabled 通道，四路舵机输出均关闭。
+原服务和背光状态、显示恢复命令保存在板端
+`/root/servo-tools/pwm-release-20261124-3p01ihib/`。
 
 普通持续模式允许 1400–1600 µs。校准 JSON 是独立记录，加载器需要通过 `--pulse-us`
 显式接收脉宽。当前扫角、阶跃和 0 口角度保持命令采用第一批编译参数，详见
